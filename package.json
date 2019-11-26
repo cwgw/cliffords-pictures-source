@@ -1,0 +1,73 @@
+{
+	"name": "cliffords-pictures-source",
+	"version": "0.0.0",
+	"license": "MIT",
+	"bin": {
+		"cliffs-pics": "lib/index.js"
+	},
+	"engines": {
+		"node": ">=8"
+	},
+	"scripts": {
+		"format": "xo --fix",
+		"lint": "xo",
+		"build": "rm -rf lib && npx babel src/cli -d lib"
+	},
+	"dependencies": {
+		"axios": "^0.19.0",
+		"bottleneck": "^2.19.5",
+		"convert-hrtime": "^3.0.0",
+		"dotenv": "^8.2.0",
+		"fs-extra": "^8.1.0",
+		"glob": "^7.1.6",
+		"imagemin": "^7.0.1",
+		"imagemin-mozjpeg": "^8.0.0",
+		"imagemin-pngquant": "^8.0.0",
+		"imagemin-webp": "^5.1.0",
+		"import-jsx": "^3.0.0",
+		"ink": "^2.5.0",
+		"ink-spinner": "^3.0.1",
+		"lodash": "^4.17.15",
+		"meow": "^5.0.0",
+		"p-queue": "^6.2.1",
+		"prop-types": "^15.7.2",
+		"react": "^16.12.0",
+		"redux": "^4.0.4",
+		"sharp": "^0.23.3",
+		"yargs": "^15.0.2"
+	},
+	"devDependencies": {
+		"@babel/cli": "^7.7.0",
+		"@babel/core": "^7.7.2",
+		"@babel/preset-env": "^7.7.1",
+		"@babel/preset-react": "^7.7.0",
+		"@babel/register": "^7.7.0",
+		"chalk": "^3.0.0",
+		"core-js": "^3.4.1",
+		"eslint-config-xo-react": "^0.20.0",
+		"eslint-plugin-react": "^7.16.0",
+		"eslint-plugin-react-hooks": "^2.3.0",
+		"prettier": "^1.19.1",
+		"regenerator-runtime": "^0.13.3",
+		"xo": "^0.25.3"
+	},
+	"babel": {
+		"presets": [
+			"@babel/preset-react",
+			[
+				"@babel/preset-env",
+				{
+					"targets": {
+						"node": true
+					},
+					"useBuiltIns": "usage",
+					"corejs": "3"
+				}
+			]
+		]
+	},
+	"xo": {
+		"extends": "xo-react",
+		"prettier": true
+	}
+}
