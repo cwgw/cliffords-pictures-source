@@ -1,0 +1,39 @@
+{
+  "id": "0x32b95d8ec36331b9",
+  "aspectRatio": 0.9810543657331137,
+  "people": null,
+  "date": null,
+  "location": null,
+  "base64": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAACXBIWXMAAAsSAAALEgHS3X78AAADCElEQVQozyXO/U8SARwG8PtL2lKzmVmNUlEUlEA4QBAPkAMVTwHFV4TgOAORE8NCLQkUQnk7Qc7XyUxzvlEo+ZIt0Pp7orV99uz7w/NsX2Dv8za5thIllsLRYCQWChPhCBGNJYjEWpzcTCQ34vFkLEaEorFlgogkVuMAQfjnPuATuMFi7Tdjgwa0YAgdHx13mfEZzOG2WKdeobYRzDaKT9k+fJwDvAtvMKtWo2uGOxpaZQx+Cx0UM4QKdltvc8cI1K6XwINiqVqg0Lb2GzX4tB14P28bNsplytomfhmd+aCytphSV0oFnzEVNFDD4uu4gj4uv4cN9Qo1pu4J9wTgXXQYsXZYVccRlNUxiijV957RSqiC5yyE2TwsFBshiUnaZpYiVpVh2vAuMAOEItPjk2qklyUQVTAaSqpq7lc3PmLK6lsGRbAF7rB2IHaVxtmtnx1xBBze+CKQTLrfzvT1D3HE0NNGZkkNraie/YTXzoT1kAqFEYu857Wib7LLNG9whV2B9SVgZ+ut16M1GpvaZE9YrBJafRG9qQKU0yVasK0PlGnZsI7bZYZG3QOu0FRwYwnY28aDvk4ryuhUPgK5xfSGwqD8ZWsVqKjjwVRQShHAlTLdywFc5QzYg+ufgP1NLOKT4BhV0/VQ1FzMZBfRuWVM6DkHrubIKKyW8iaoQojU9GBS+0c0QC4Ce6SB8LW47VS97rFcWsbhlTbyyznyaiFSL0JoPOULUEERqmndFolt3hRY9QH76xgZbF908xxjjQO9DFhBg5R0pY6vNku0mLT7lajTIEBQsX5K7fLbI4WXjlKzqVUssTzs9+imnVoMQ4yWntfOYec86loYc3pR3GOa9FlmQ85lcmF7Lwmcn66fHkQPdpdSW34ysRAOeYLLnvCKP74RJneiZCqWTMXWdontL+T+cSqdOQRurrPXl5mri6/fs+mzzEn69Ojk5PA0ffw1k85kv51dZM4vzrKXZxfX2asflzc/fwD52z8Ft7e/8/mCu1zu7lfuX+Zyv3P5//78P/L5f82/yHFwIuzesGcAAAAASUVORK5CYII=",
+  "faces": [
+    {
+      "id": "0x32b95d8ec36331b9-32-57",
+      "faceId": "2fbb85e7-185f-4838-b93c-c9fedffb3713",
+      "rect": {
+        "top": 0.52490421,
+        "left": 0.28255208,
+        "width": 0.08398438,
+        "height": 0.08237548,
+        "center": {
+          "x": 0.32454427,
+          "y": 0.56609195
+        }
+      }
+    },
+    {
+      "id": "0x32b95d8ec36331b9-71-48",
+      "faceId": "5cd1a767-34a1-463a-8486-3d383929c19e",
+      "rect": {
+        "top": 0.44763729,
+        "left": 0.67317708,
+        "width": 0.06835938,
+        "height": 0.06704981,
+        "center": {
+          "x": 0.70735677,
+          "y": 0.4811622
+        }
+      }
+    }
+  ],
+  "transform": null
+}

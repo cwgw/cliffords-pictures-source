@@ -1,0 +1,39 @@
+{
+  "id": "0x3c9eca6d86e351eb",
+  "aspectRatio": 0.9802631578947368,
+  "people": null,
+  "date": null,
+  "location": null,
+  "base64": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAACXBIWXMAAAsSAAALEgHS3X78AAADGUlEQVQozx3EC08SAQAA4PsfnlZaiy3XQ5JETeQ0TtNEDJE61JBQMw04cj5gAmXooUamgpIiPngcIgcKIiiUKCQSZU9ArdY/ydq+fYA/+I7weHDnitVhxZ02nPjPZV1x25xe+/rmqi9AeP3Ehn8tEPLvRHeBBcvSy4kRpbpfrkIVL6SqYakSQxXDYpVGMvTqqXaqd8og1xkGDHPqRcuUy4MD2glM2tve/LCmobEMaSlvFJbxWumIsITXRmvpond2w30DTOUzDqYR6vQyC64D1Ji8rYPNrKOUV1xkVJFg5kVG7XlGbTaDda6ac/4eP7dTTB2Qw2MYMjvdjdvGgVGNTNTJ5rApMHwBYuSUMs7S4EwaDJZWZpTXZNYjJLG4eHSwdkHXtrqk8BJ6YOa18nl/82MBxKm7CleQiunnCkpAailYRAch+EwD93Kf5JZBw3PPSQN2LOQxAvb5kTmtZFjG7XoIsZh5RSU5eRSQfCODQgXppdkIi6x6XL30XODT9YaWR8KuBSBAGLzmoeVJibqfy+fRIIiUdz3zKjkjPz+rvIgkuF04/KDOIhV6B3u2JzU7ZhMQDa5ENmc3cfWbsUdoR+Wd27kFBVlkMliYn80sviKCy8Y5XCu/1f2k26dSh6aNwMGOK7Zl2nYMmcbb+8QV9azcmzezKBSQdiPnHo0sq6o01CM4V+h8IFpHVdsvDUB02/bWPUmY+qeGGru7oAb2JQg6Qy0E6dQcBCIraivmkPt2hL/a1OHukm9hOiC8seizjZn1PdpBfq+0RtBScrf+evWda6yq/NY6SM1nLz4REKJHa2KJV/Ys+PoNEPbbNxwzNiM2PSHXYKhS1dbT14yiPFTUpJAK9UrUOToQ0A4GX4281c3sWRzA/m7w3ZbH53G4COuKY9GGzy6Z9aaFyXnjxPK83mUxhgjz+zX7gccV920mQrvA4eHnROJTPJ6IxeOxg1jsIPp+fy8SDe9FdiJ74f1oJBHb//Lhw7ePn74dfv3+JQkkUyfJ9Ekq/TN1dPqp4+TRcTL9z4/UqZMf6ZPk0a/U8e/0zz+n/gJNu4k3Ac/sFAAAAABJRU5ErkJggg==",
+  "faces": [
+    {
+      "id": "0x3c9eca6d86e351eb-77-37",
+      "faceId": "c05c8f6c-b87f-4ff5-bc66-a7bab0ae703e",
+      "rect": {
+        "top": 0.31397575,
+        "left": 0.70963542,
+        "width": 0.12369792,
+        "height": 0.1212508,
+        "center": {
+          "x": 0.77148438,
+          "y": 0.37460115
+        }
+      }
+    },
+    {
+      "id": "0x3c9eca6d86e351eb-12-41",
+      "faceId": "99e40ebe-dca3-48c0-a6e5-441d488e7abc",
+      "rect": {
+        "top": 0.36247607,
+        "left": 0.06835938,
+        "width": 0.10611979,
+        "height": 0.10402042,
+        "center": {
+          "x": 0.12141928,
+          "y": 0.41448628
+        }
+      }
+    }
+  ],
+  "transform": null
+}

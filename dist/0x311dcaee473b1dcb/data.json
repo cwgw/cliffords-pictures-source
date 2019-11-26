@@ -1,0 +1,39 @@
+{
+  "id": "0x311dcaee473b1dcb",
+  "aspectRatio": 0.9786535303776683,
+  "people": null,
+  "date": null,
+  "location": null,
+  "base64": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAACXBIWXMAAAsSAAALEgHS3X78AAADEElEQVQozx2S6VMSAQDF9z/JURlHDRFNScOLhLJCDkFYDlkUVHIVkAUtQY40rxBEF0gTcUJR8VigHDNKMDNxlZoSOybtXwmd+X1489779h4Qi3/G3uwsr234A8HFpWAwtI5Fo+/ex/biicR+Ip74GI9/SMRjBwd7x8nDVCoFLK2uTrqcRoux16DVP9FZh43T7heB5XksHIxGg9iWfzM0i615trFXe7trRwe7wIzHaeiHZXIuv7leJLrX2ckzmTqmXEafb9S/MDLrHvA6tHOO7uBs39u1yf3dIOBw2nrUIqGQynpI5LHIkITaq2bZrNDEuGrsudLyRGDSPhpCGtAhcHWu/334JTDjMiOIQCat4HMKhFwiJCqDVTQ9wuzTszVwQ6v4joxXohKRLRrGnF0VXXEAXre1rw9skVVy2AXsxkJ+EwlqobQrqxStVJB/6359Pr06h8MgdLVUTAxKV3wjgMdt1emFTQJKDZ1QWZdLo+dxOESJiCwVFHMe5tdWZVMpNxg1WTJeqVnX7EMtAIpa1b1CJresvDq7pDKLWpvDYuZDwiIFWCRmFzAZhAZaDoueI+eVGtU8r2MQmEFtOgTkN1No9YTautxH9/Kk3EJYXKxpKVaBRIhXKOUWyDj5KlG5ScNH7WbA7RkyPpV0yKniJqKkidjWTIKlJQhUikBkWELqAIuUILFdcLNHVmHWCVCHFfB6h21mme4xrVtepm6l9LbdRpS39YpyDVTSKSa1gSSFiNQuJmsUNdZ+iWd6CFjwO+3jGttTgRlhWg2sDGZDo0n3wNBN7+mo61LUwe13tY8ZJgN/clS96JsCQhsBn8+OugZcdmTGaZi+Apl2aCfH4bFh1cizzHywY0LrRU2BRWcECwKxvY9vtsMYtrK5GdjCljBsKRwJRCKvw5kXrc9vrM9vbfoj4cDOduhD7O2n/QSAp74f4akvSfwweXyE40kcPz7B8VMcP0ke40fXJPET/OT09DT1LfX1DDg7vzj7eZn+dZn+fXn+59/PazLi/PeVefYrk15cdc4vfqT//khf/AdeKYDjVP+7FQAAAABJRU5ErkJggg==",
+  "faces": [
+    {
+      "id": "0x311dcaee473b1dcb-31-29",
+      "faceId": "ee05e033-0ae5-4393-b826-8776f8029c25",
+      "rect": {
+        "top": 0.23757962,
+        "left": 0.25260417,
+        "width": 0.109375,
+        "height": 0.10700637,
+        "center": {
+          "x": 0.30729167,
+          "y": 0.29108281
+        }
+      }
+    },
+    {
+      "id": "0x311dcaee473b1dcb-74-26",
+      "faceId": "730c60b7-7e81-4315-9c5a-b52f8def14af",
+      "rect": {
+        "top": 0.2133758,
+        "left": 0.69466146,
+        "width": 0.09700521,
+        "height": 0.09490446,
+        "center": {
+          "x": 0.74316407,
+          "y": 0.26082803
+        }
+      }
+    }
+  ],
+  "transform": null
+}

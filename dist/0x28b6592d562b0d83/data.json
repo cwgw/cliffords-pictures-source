@@ -1,0 +1,53 @@
+{
+  "id": "0x28b6592d562b0d83",
+  "aspectRatio": 0.9802631578947368,
+  "people": null,
+  "date": null,
+  "location": null,
+  "base64": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAACXBIWXMAAAsSAAALEgHS3X78AAAC7ElEQVQozzXQW1MSARQH8P0sTY1TiSaCLLjIZbntXXCxMFJEgQUVkd3F0UARLxlGTloGqKOBKaGINWlPNeaFJqqngLRP0+pMZ37n//Z/OAf4/OX4w+HRXrG4WygIWSge7O0X9wr7+d29XD6/vZPLvt3ezGTfZDI7ubcHxV0gl3+3kn71bHE+nphZXJpfehlfWl54sRR/vvjkaXw6Nh0ZD4dYfiQ0xs/MxZLJV8Dr1PJkbDTIu0a4nrFxVzjCRCK+iYhvfIwJDDt6e62WDsSEaikz1u92xqangOeLcyzvcnkolwcZ9lNswMIHraPs/YDf2uvACBxSyEUNjbdAUGy2UHyIBxLPYizrcLtQjwsODCLsIMr5cc5PDjCYvQvGTC2Q7HaT6AbY0kiSWJBlgcTCFD/iYPpQphcOMKaA2+h3G339hu6HGtoCtaMyVNOkkd/VKiXmdoLlOCA+PzUy5Ox/RDhtBk830m839Ni0NlqJI1LU0ExjMhuusOilmF5Bd5BXhdmZWZ/Ha6M7rRTRRRM2GqHbtQSqULc1qpWidqP0IQVZEZAwQnQHxfIcEI0lHE4Ww52w7gGCWHGMxFCdSa9Qtja0yur1KjFpAE1qiV4rF45mOR4IR1c67WEIHhDLexSqBxqY1MEanVoGyRtaJPUyaYNcdk/cVA+CEoIirgqPo2tmW0yqGr4rdUogW6sKV7YplYpmsEXULBYeKrpTL7pZV9fY3ISRJMePArMLWw4mYTKHNUgAoRic6kJxzGjUGgwqWKduU2vkkEoCytU62N7dHZ2KAasbB9G5jUBoeSi4EAzNBLmxoeEhr/AHn9vrYzyMt8/tcTj7vAO+icmJZDIFHH06zu1+2sy+38gUslv5TGZrfWM9vZpKrSavMp1OplIryddra6vbOzsfD4+AcvlnqVQ+O/8uOC8Jvp2dn5+cnl47EearQNjT01LpW/nHL6Dy+7egWqlUq7Vq7aL2R3D530WtdqVSvVa7rNT+/gMONFqqjT4RMAAAAABJRU5ErkJggg==",
+  "faces": [
+    {
+      "id": "0x28b6592d562b0d83-21-42",
+      "faceId": "3e46dd9e-6d9d-4f4b-99df-ff0a805b1e91",
+      "rect": {
+        "top": 0.36247607,
+        "left": 0.15885417,
+        "width": 0.11067708,
+        "height": 0.10848756,
+        "center": {
+          "x": 0.21419271,
+          "y": 0.41671985
+        }
+      }
+    },
+    {
+      "id": "0x28b6592d562b0d83-72-42",
+      "faceId": "334d86a8-ff49-49c4-92ae-6ee7cbe17d16",
+      "rect": {
+        "top": 0.36758137,
+        "left": 0.66992188,
+        "width": 0.10872396,
+        "height": 0.10657307,
+        "center": {
+          "x": 0.72428386,
+          "y": 0.42086791
+        }
+      }
+    },
+    {
+      "id": "0x28b6592d562b0d83-41-34",
+      "faceId": "119f71f2-9f59-497a-b076-de297456f040",
+      "rect": {
+        "top": 0.29546905,
+        "left": 0.36588542,
+        "width": 0.0859375,
+        "height": 0.0842374,
+        "center": {
+          "x": 0.40885417,
+          "y": 0.33758775
+        }
+      }
+    }
+  ],
+  "transform": null
+}
