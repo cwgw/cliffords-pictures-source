@@ -11,6 +11,6 @@ module.exports = {
 		metadata: 'data/photos',
 		images: 'static/photos',
 		src: 'build/photos',
-		data: 'dist',
+		data: 'site/content',
 	},
 };
