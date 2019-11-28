@@ -8,7 +8,7 @@ const run = require('./commands');
 
 const cli = yargs();
 
-const argv = cli
+const {_: input, ...argv} = cli
 	.scriptName('cliffs-pics-source')
 	.usage('Usage: $0 <command> [options]')
 	.option('testRun', {
@@ -23,10 +23,19 @@ const argv = cli
 		alias: 'i',
 		type: 'boolean',
 	})
+	.option('parseScans', {
+		alias: 's',
+		type: 'boolean',
+	})
+	.option('initialRotation', {
+		alias: 'r',
+		type: 'number',
+		nargs: 1,
+	})
 	.wrap(cli.terminalWidth())
 	.fail((msg, err) => {
 		report.error(msg, err);
 	})
 	.parse(process.argv.filter(a => !(a === __dirname || a.endsWith('node'))));
 
-run({...argv, input: argv._}, config);
+run({input, options: {...config, ...argv}});

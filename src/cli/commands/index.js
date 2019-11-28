@@ -7,24 +7,24 @@
  */
 
 const path = require('path');
-const fs = require('fs-extra');
 const glob = require('glob');
 const PQueue = require('p-queue').default;
 
 const reporter = require('../reporter');
 const createMetadata = require('./create-photo-metadata');
 const createImages = require('./create-web-ready-images');
+const parseScans = require('./create-photos-from-scans');
 
-module.exports = (args, config) => {
+module.exports = ({input, options}) => {
 	const nothingToDo = () => {
 		reporter.info(`There's nothing to do. Exiting process early...`);
 		process.exit();
 	};
 
-	const files = args.input.reduce((acc, input) => {
-		let inputFiles = glob.sync(input);
+	const files = input.reduce((acc, i) => {
+		let inputFiles = glob.sync(i);
 		if (inputFiles.length === 0) {
-			inputFiles = [input];
+			inputFiles = [i];
 		}
 
 		return acc.concat(
@@ -40,29 +40,33 @@ module.exports = (args, config) => {
 		nothingToDo();
 	}
 
-	if (args.testRun) {
-		for (const d in config.dest) {
-			if (Object.prototype.hasOwnProperty.call(config.dest, d)) {
-				config.dest[d] = path.join('./test', config.dest[d]);
-			}
-		}
+	if (options.testRun) {
+		options.dest = path.join('./test', options.dest);
+	}
+
+	if (options.parseScans) {
+		return Promise.all(
+			files.map(file =>
+				parseScans({
+					file,
+					options,
+					reporter,
+				})
+			)
+		);
 	}
 
 	const tasks = [];
 
-	if (args.createMetadata) {
+	if (options.createMetadata) {
 		tasks.push(createMetadata);
 	}
 
-	if (args.createImages) {
-		if (config.withWebp && config.imageFormat !== 'webp') {
-			config.imageFormat = [config.imageFormat, 'webp'];
-		}
-
+	if (options.createImages) {
 		tasks.push(createImages);
 	}
 
-	if (tasks.length < 1) {
+	if (tasks.length === 0) {
 		reporter.warn('no tasks specified');
 		nothingToDo();
 	}
@@ -80,7 +84,7 @@ module.exports = (args, config) => {
 			tasks.map(func => {
 				return func({
 					file,
-					config,
+					options,
 					reporter,
 					sequence,
 				});

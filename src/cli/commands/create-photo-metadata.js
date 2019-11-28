@@ -26,7 +26,7 @@ const rateLimiter = new Bottleneck({
 	minTime: 3334, // 18 per minute
 });
 
-module.exports = async ({file, reporter, sequence, config}) => {
+module.exports = async ({file, reporter, sequence, options}) => {
 	try {
 		const imagePipeline = await sharp(file.filePath);
 		const aspectRatio = await getAspectRatio({imagePipeline});
@@ -42,21 +42,21 @@ module.exports = async ({file, reporter, sequence, config}) => {
 		sequence.update({add: 1, text: 'creating base64 string'});
 		meta.base64 = await getBase64({imagePipeline, reporter});
 		sequence.step();
-		
+
 		sequence.update({add: 1, text: 'searching for faces'});
-		const { faces, transform } = await getFaces({
+		const {faces, transform} = await getFaces({
 			meta,
 			imagePipeline,
 			reporter,
-			sequence
+			sequence,
 		});
 		meta.faces = faces;
 		meta.transform = transform;
 		sequence.step();
-		// meta.faces = [];
+		// Meta.faces = [];
 
 		sequence.update({add: 1, text: 'saving photo metadata'});
-		await io.savePhotoMeta(meta, {config, force: true});
+		await io.savePhotoMeta(meta, {options, force: true});
 		sequence.step();
 
 		return Promise.resolve();

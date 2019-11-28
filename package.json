@@ -29,6 +29,7 @@
 		"ink-spinner": "^3.0.1",
 		"lodash": "^4.17.15",
 		"meow": "^5.0.0",
+		"opencv": "^6.2.0",
 		"p-queue": "^6.2.1",
 		"prop-types": "^15.7.2",
 		"react": "^16.12.0",
@@ -68,6 +69,7 @@
 	},
 	"xo": {
 		"extends": "xo-react",
-		"prettier": true
+		"prettier": true,
+		"ignores": "site"
 	}
 }

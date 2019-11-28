@@ -9,14 +9,14 @@ const sharp = require('sharp');
 
 const io = require('./io');
 
-module.exports = async ({file, reporter, sequence, config}) => {
+module.exports = async ({file, reporter, sequence, options}) => {
 	const id = file.name;
-	const meta = await io.getPhotoMeta(id, config);
+	const meta = await io.getPhotoMeta(id, options);
 	const rotate = get(meta, 'transform.rotate', 0);
-	const formats = Array.isArray(config.imageFormat) ? config.imageFormat : [config.imageFormat];
 	const imagePipeline = sharp(file.filePath).rotate(rotate);
-	const imageVariants = config.imageSizes.reduce(
-		(arr, width) => arr.concat(formats.map(format => ({format, width}))),
+	const imageVariants = options.imageSizes.reduce(
+		(arr, width) =>
+			arr.concat(options.imageFormats.map(format => ({format, width}))),
 		[]
 	);
 
@@ -32,7 +32,7 @@ module.exports = async ({file, reporter, sequence, config}) => {
 				width,
 				ext: format,
 			},
-			config
+			options
 		);
 		fs.ensureDirSync(path.parse(outputPath).dir);
 		return imagePipeline
