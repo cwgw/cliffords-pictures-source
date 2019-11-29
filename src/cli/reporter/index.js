@@ -16,6 +16,10 @@ module.exports = {
 		message(args, 'error');
 		process.exit(1);
 	},
+	exit: (...args) => {
+		message(args, 'info');
+		process.exit();
+	},
 	sequence: payload => {
 		const id = _.uniqueId(`sequence-`);
 		actions.createSequence({id, ...payload});

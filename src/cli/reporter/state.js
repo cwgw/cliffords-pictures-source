@@ -27,12 +27,47 @@ const reducer = (state, action) => {
 			};
 		}
 
+		case 'MAKE_LOG_STATIC': {
+			let log;
+			const {id, ...payload} = action.payload;
+			const logs = state.logs.filter(o => {
+				if (o.id === id) {
+					log = o;
+					return false;
+				}
+
+				return true;
+			});
+			return {
+				logs,
+				staticLogs: [
+					...state.staticLogs,
+					{
+						...log,
+						...payload,
+					},
+				],
+			};
+		}
+
+		case 'ADD_STATIC_LOG': {
+			return {
+				...state,
+				staticLogs: [
+					...state.staticLogs,
+					{
+						...action.payload,
+					},
+				],
+			};
+		}
+
 		default:
 			return state;
 	}
 };
 
-const store = Redux.createStore(reducer, {logs: []});
+const store = Redux.createStore(reducer, {logs: [], staticLogs: []});
 
 function getLog(id, state) {
 	if (!state) {
@@ -52,10 +87,17 @@ const intrface = {
 			return;
 		}
 
-		store.dispatch(action);
-		for (const fn of stateChangeListeners) {
-			fn(action);
+		let actions = action;
+		if (!Array.isArray(actions)) {
+			actions = [action];
 		}
+
+		actions.forEach(a => {
+			store.dispatch(a);
+			for (const fn of stateChangeListeners) {
+				fn(a);
+			}
+		});
 	},
 	onStateChange: fn => {
 		stateChangeListeners.add(fn);
@@ -75,7 +117,17 @@ const actions = {
 		return {
 			type: 'ADD_LOG',
 			payload: {
-				id: id || _.uniqueId('task'),
+				id: id || _.uniqueId('log'),
+				startTime: process.hrtime(),
+				...payload,
+			},
+		};
+	},
+	createStaticLog: ({id, ...payload}) => {
+		return {
+			type: 'ADD_STATIC_LOG',
+			payload: {
+				id: id || _.uniqueId('staticLog'),
 				startTime: process.hrtime(),
 				...payload,
 			},
@@ -96,7 +148,7 @@ const actions = {
 		};
 	},
 	createMessage: ({text, status}) => {
-		return actions.createLog({
+		return actions.createStaticLog({
 			type: 'message',
 			status,
 			text,
@@ -137,7 +189,7 @@ const actions = {
 		}
 
 		return {
-			type: 'UPDATE_LOG',
+			type: 'MAKE_LOG_STATIC',
 			payload: {
 				id,
 				current: log.total,
@@ -151,13 +203,25 @@ const actions = {
 			return null;
 		}
 
-		return {
-			type: 'UPDATE_LOG',
-			payload: {
-				id,
-				current: log.current + n,
-			},
+		const payload = {
+			id,
+			current: log.current + n,
 		};
+
+		return [
+			{
+				type: 'ADD_STATIC_LOG',
+				payload: {
+					...log,
+					...payload,
+					status: 'static',
+				},
+			},
+			{
+				type: 'UPDATE_LOG',
+				payload,
+			},
+		];
 	},
 };
 

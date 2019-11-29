@@ -3,11 +3,14 @@ const cv = require('opencv');
 const Decimal = require('decimal.js');
 const sharp = require('sharp');
 
-const reporter = require('../reporter');
-
-module.exports = async ({file, options}) => {
+module.exports = async ({file, options, reporter, sequence}) => {
 	// Load image
 	let image;
+
+	sequence.update({
+		add: 2,
+		text: 'reading image',
+	});
 
 	try {
 		image = await cvReadImage(file.filePath, {reporter});
@@ -15,10 +18,11 @@ module.exports = async ({file, options}) => {
 		reporter.panic(`Couldn't read file with opencv`, file);
 	}
 
+	sequence.step();
+
 	// Find photos
 	if (options.initialRotation > 0) {
 		image.rotate(options.initialRotation);
-		reporter.info(options.initialRotation);
 	}
 
 	// Drop alpha channel if it exists
@@ -33,22 +37,37 @@ module.exports = async ({file, options}) => {
 	let contourData = [];
 	try {
 		// Find contours
+		sequence.update('finding contours');
 		contourData = await getContours(image, isRightSized);
+		sequence.step();
 	} catch (error) {
 		reporter.panic(`Couldn't get contour data`, error);
 	}
 
+	if (contourData.length < 4) {
+		reporter.warn(`found fewer than 4 contours in file ${file.name}`);
+	}
+
+	sequence.update({add: contourData.length * 3});
+
 	// Process each	image
 	const pendingImages = contourData.map(async data => {
 		try {
+			sequence.update('refining contour');
 			const croppedImage = await rotateAndCrop({image, inset: -30, ...data});
 			const secondPassData = await getContours(croppedImage, isRightSized);
 			const finalImage = await rotateAndCrop({
-				croppedImage,
+				image: croppedImage,
 				inset: 10,
-				...secondPassData,
+				...secondPassData[0],
 			});
-			const id = await pHash(finalImage);
+			sequence.step();
+
+			sequence.update(`creating perceptual hash`);
+			const id = await pHash(finalImage, reporter);
+			sequence.step();
+
+			sequence.update(`saving photo ${id}`);
 			const filePath = path.resolve(options.dest.src, `${id}.png`);
 			return Promise.resolve(finalImage.save(filePath));
 		} catch (error) {
@@ -150,7 +169,7 @@ function getContours(image, filter = () => true) {
 		const imgThreshold = img.threshold(70, 255);
 
 		const contours = imgThreshold.findContours();
-		const contourRectData = new WeakMap([]);
+		const contourRectData = new Map([]);
 
 		for (let i = 0; i < contours.size(); i++) {
 			const rect = contours.minAreaRect(i);
@@ -186,7 +205,7 @@ function getContours(image, filter = () => true) {
 			// so we use a Map to quickly check for duplicates
 			const keyX = Math.floor(data.center.x / 100) * 100;
 			const keyY = Math.floor(data.center.y / 100) * 100;
-			const key = `${keyX}-${keyY}`;
+			const key = `_${keyX}${keyY}`;
 
 			if (contourRectData.has(key)) {
 				continue;
@@ -212,16 +231,20 @@ function rotateAndCrop({
 		img.rotate(angle, x, y);
 		const left = Math.round(x - width / 2);
 		const top = Math.round(y - height / 2);
-		resolve(
-			img.crop(left + inset, top + inset, width - inset * 2, height - inset * 2)
+		const croppedImage = img.crop(
+			left + inset,
+			top + inset,
+			width - inset * 2,
+			height - inset * 2
 		);
+		resolve(croppedImage);
 	});
 }
 
-async function pHash(image) {
+async function pHash(image, reporter) {
 	try {
 		if (!(image instanceof sharp)) {
-			image = sharp(image);
+			image = sharp(image.copy().toBuffer());
 		}
 
 		const buffer = await image

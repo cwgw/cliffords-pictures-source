@@ -8,16 +8,20 @@ const Sequence = ({text, prefixText, current, total, status}) => {
 	const spinner =
 		status === 'complete' ? (
 			<Color green>✓</Color>
+		) : status === 'static' ? (
+			<Color gray>✓</Color>
 		) : (
 			<Color gray>
 				<Spinner type="dots" />
 			</Color>
 		);
 	const label = <Box textWrap="truncate-start">{text}</Box>;
+	const prefix =
+		status === 'static' ? <Color gray>{prefixText}</Color> : prefixText;
 
 	return (
 		<Box>
-			{prefixText} {spinner} {steps} {label}
+			{prefix} {spinner} {steps} {label}
 		</Box>
 	);
 };

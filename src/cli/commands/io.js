@@ -5,9 +5,9 @@ const _ = require('lodash');
 const reporter = require('../reporter');
 
 const formatPath = {
-	meta: (id, {dest}) => path.resolve(dest, id, `data.json`),
+	meta: (id, {dest}) => path.resolve(dest.web, id, `data.json`),
 	webImage: ({id, width, ext}, {dest}) =>
-		path.resolve(dest, id, `${width}.${ext}`),
+		path.resolve(dest.web, id, `${width}.${ext}`),
 };
 
 const getPhotoMeta = async (id, options) => {

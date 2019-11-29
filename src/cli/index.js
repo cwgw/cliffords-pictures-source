@@ -32,6 +32,10 @@ const {_: input, ...argv} = cli
 		type: 'number',
 		nargs: 1,
 	})
+	.option('resolution', {
+		type: 'number',
+		default: 600,
+	})
 	.wrap(cli.terminalWidth())
 	.fail((msg, err) => {
 		report.error(msg, err);

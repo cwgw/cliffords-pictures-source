@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 /**
  * To do:
  *  - add 'clean' flag that wipes destination dir before starting
@@ -7,6 +5,7 @@
  */
 
 const path = require('path');
+const fs = require('fs-extra');
 const glob = require('glob');
 const PQueue = require('p-queue').default;
 
@@ -17,8 +16,7 @@ const parseScans = require('./create-photos-from-scans');
 
 module.exports = ({input, options}) => {
 	const nothingToDo = () => {
-		reporter.info(`There's nothing to do. Exiting process early...`);
-		process.exit();
+		reporter.exit(`There's nothing to do. Exiting process early...`);
 	};
 
 	const files = input.reduce((acc, i) => {
@@ -41,18 +39,28 @@ module.exports = ({input, options}) => {
 	}
 
 	if (options.testRun) {
-		options.dest = path.join('./test', options.dest);
+		for (const d in options.dest) {
+			if (Object.prototype.hasOwnProperty.call(options.dest, d)) {
+				options.dest[d] = path.join('./test', options.dest[d]);
+			}
+		}
 	}
 
 	if (options.parseScans) {
+		fs.ensureDirSync(path.resolve(options.dest.src));
 		return Promise.all(
-			files.map(file =>
-				parseScans({
+			files.map((file, i, arr) => {
+				const sequence = reporter.sequence({
+					prefixText: `${i} of ${arr.length}: ${file.name}`,
+					text: 'starting',
+				});
+				return parseScans({
 					file,
 					options,
 					reporter,
-				})
-			)
+					sequence,
+				}).then(() => sequence.succeed());
+			})
 		);
 	}
 
@@ -75,9 +83,9 @@ module.exports = ({input, options}) => {
 
 	reporter.info(`Processing ${files.length} files`);
 
-	const pendingTasks = files.map(file => () => {
+	const pendingTasks = files.map((file, i, arr) => () => {
 		const sequence = reporter.sequence({
-			prefixText: file.name,
+			prefixText: `${i} of ${arr.length}: ${file.name}`,
 			text: 'starting',
 		});
 		return Promise.all(
