@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import {Box, Color} from 'ink';
 
 const createLabel = (text, color) => (...props) => (
-	<Color {...{[color]: true, ...props}}>{text}</Color>
+	<Color {...{[color]: true, ...props}}>{text.padEnd(8)}</Color>
 );
 
 const getLabel = status => {
@@ -24,11 +24,14 @@ const getLabel = status => {
 	}
 };
 
-const Message = ({text, status}) => {
+const Message = ({text, timestamp, status}) => {
 	const TextLabel = getLabel(status);
 	return (
 		<Box textWrap="wrap" flexDirection="row" alignItems="flex-start">
-			<Box marginRight={2}>
+			<Box marginRight={1}>
+				<Color gray> {timestamp} </Color>
+			</Box>
+			<Box marginRight={1}>
 				<TextLabel />
 			</Box>
 			<Box flexDirection="column" justifyContent="flex-start">

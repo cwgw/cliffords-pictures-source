@@ -3,22 +3,17 @@ const cv = require('opencv');
 const Decimal = require('decimal.js');
 const sharp = require('sharp');
 
-module.exports = async ({file, options, reporter, sequence}) => {
+const reporter = require('../reporter');
+
+module.exports = async ({file, options, parentJob}) => {
 	// Load image
 	let image;
-
-	sequence.update({
-		add: 2,
-		text: 'reading image',
-	});
 
 	try {
 		image = await cvReadImage(file.filePath, {reporter});
 	} catch {
 		reporter.panic(`Couldn't read file with opencv`, file);
 	}
-
-	sequence.step();
 
 	// Find photos
 	if (options.initialRotation > 0) {
@@ -34,12 +29,12 @@ module.exports = async ({file, options, reporter, sequence}) => {
 
 	const isRightSized = getPolaroidSizeTest(options.resolution);
 
+	const job = parentJob.add('find contours');
+
 	let contourData = [];
 	try {
 		// Find contours
-		sequence.update('finding contours');
 		contourData = await getContours(image, isRightSized);
-		sequence.step();
 	} catch (error) {
 		reporter.panic(`Couldn't get contour data`, error);
 	}
@@ -48,12 +43,11 @@ module.exports = async ({file, options, reporter, sequence}) => {
 		reporter.warn(`found fewer than 4 contours in file ${file.name}`);
 	}
 
-	sequence.update({add: contourData.length * 3});
-
 	// Process each	image
-	const pendingImages = contourData.map(async data => {
+	const pendingImages = contourData.map(async (data, i) => {
 		try {
-			sequence.update('refining contour');
+			const childJob = job.add(`image ${i}`);
+			const refineContours = childJob.add('refine contours');
 			const croppedImage = await rotateAndCrop({image, inset: -30, ...data});
 			const secondPassData = await getContours(croppedImage, isRightSized);
 			const finalImage = await rotateAndCrop({
@@ -61,21 +55,26 @@ module.exports = async ({file, options, reporter, sequence}) => {
 				inset: 10,
 				...secondPassData[0],
 			});
-			sequence.step();
+			refineContours.finish();
 
-			sequence.update(`creating perceptual hash`);
+			const hashJob = childJob.add('create perceptual hash');
 			const id = await pHash(finalImage, reporter);
-			sequence.step();
+			hashJob.finish();
 
-			sequence.update(`saving photo ${id}`);
 			const filePath = path.resolve(options.dest.src, `${id}.png`);
-			return Promise.resolve(finalImage.save(filePath));
+			const saveJob = childJob.add(
+				`save photo ${path.relative('./', filePath)}`
+			);
+			finalImage.save(filePath);
+			saveJob.finish();
+			childJob.finish();
 		} catch (error) {
 			reporter.error(`Couldn't process image`, error);
 		}
 	});
 
-	return Promise.all(pendingImages);
+	await Promise.all(pendingImages);
+	job.finish();
 };
 
 function cvReadImage(filePath, {reporter}) {

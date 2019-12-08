@@ -1,64 +1,95 @@
-const Redux = require('redux');
+const uuid = require('uuid/v4');
 const _ = require('lodash');
+const convertHrtime = require('convert-hrtime');
+const {createStore, bindActionCreators} = require('redux');
+
+const ADD_ACTIVE_LOG = 'ADD_ACTIVE_LOG';
+const REMOVE_ACTIVE_LOG = 'REMOVE_ACTIVE_LOG';
+const ADD_STATIC_LOG = 'ADD_STATIC_LOG';
+const ADD_JOB = 'ADD_JOB';
+const REMOVE_JOB = 'REMOVE_JOB';
+const UPDATE_JOB = 'UPDATE_JOB';
+
+const initialState = {
+	jobs: {},
+	logs: {
+		active: [],
+		static: [],
+	},
+};
 
 const reducer = (state, action) => {
 	switch (action.type) {
-		case 'ADD_LOG': {
+		case ADD_ACTIVE_LOG: {
+			const {payload} = action;
 			return {
 				...state,
-				logs: [...state.logs, action.payload],
+				logs: {
+					...state.logs,
+					active: [...state.logs.active, payload],
+				},
 			};
 		}
 
-		case 'UPDATE_LOG': {
+		case REMOVE_ACTIVE_LOG: {
+			const {id} = action.payload;
+			return {
+				...state,
+				logs: {
+					...state.logs,
+					active: state.logs.active.filter(o => o.id !== id),
+				},
+			};
+		}
+
+		case ADD_STATIC_LOG: {
+			const {payload} = action;
+			// Console.log(payload)
+			return {
+				...state,
+				logs: {
+					...state.logs,
+					static: [...state.logs.static, payload],
+				},
+			};
+		}
+
+		case ADD_JOB: {
 			const {id, ...payload} = action.payload;
 			return {
 				...state,
-				logs: state.logs.map(log => {
-					if (id !== log.id) {
-						return log;
-					}
-
-					return {
-						...log,
-						...payload,
-					};
-				}),
-			};
-		}
-
-		case 'MAKE_LOG_STATIC': {
-			let log;
-			const {id, ...payload} = action.payload;
-			const logs = state.logs.filter(o => {
-				if (o.id === id) {
-					log = o;
-					return false;
-				}
-
-				return true;
-			});
-			return {
-				logs,
-				staticLogs: [
-					...state.staticLogs,
-					{
-						...log,
+				jobs: {
+					...state.jobs,
+					[id]: {
+						id,
 						...payload,
 					},
-				],
+				},
 			};
 		}
 
-		case 'ADD_STATIC_LOG': {
+		case REMOVE_JOB: {
+			const {id} = action.payload;
+			const jobs = {...state.jobs};
+			delete jobs[id];
 			return {
 				...state,
-				staticLogs: [
-					...state.staticLogs,
-					{
-						...action.payload,
+				jobs,
+			};
+		}
+
+		case UPDATE_JOB: {
+			const {id, ...payload} = action.payload;
+			const job = state.jobs[id];
+			return {
+				...state,
+				jobs: {
+					...state.jobs,
+					[id]: {
+						...job,
+						...payload,
 					},
-				],
+				},
 			};
 		}
 
@@ -67,165 +98,179 @@ const reducer = (state, action) => {
 	}
 };
 
-const store = Redux.createStore(reducer, {logs: [], staticLogs: []});
+const store = createStore(reducer, initialState);
 
-function getLog(id, state) {
-	if (!state) {
-		state = store.getState();
+function dispatch(action) {
+	if (!action) {
+		return;
 	}
 
-	return _.find(state.logs, o => o.id === id);
+	if (Array.isArray(action)) {
+		action.forEach(item => dispatch(item));
+		return;
+	}
+
+	store.dispatch(action);
 }
 
-const stateChangeListeners = new Set();
-
-const intrface = {
-	getLog,
-	getStore: () => store,
-	dispatch: action => {
-		if (!action) {
-			return;
-		}
-
-		let actions = action;
-		if (!Array.isArray(actions)) {
-			actions = [action];
-		}
-
-		actions.forEach(a => {
-			store.dispatch(a);
-			for (const fn of stateChangeListeners) {
-				fn(a);
-			}
-		});
-	},
-	onStateChange: fn => {
-		stateChangeListeners.add(fn);
-		return () => {
-			stateChangeListeners.delete(fn);
-		};
-	},
-};
-
 const actions = {
-	createLog: ({id, ...payload}) => {
-		const existingLog = getLog(id);
-		if (existingLog) {
-			throw new Error(`Can't create log with id "${id}": id already exists`);
-		}
-
-		return {
-			type: 'ADD_LOG',
-			payload: {
-				id: id || _.uniqueId('log'),
-				startTime: process.hrtime(),
-				...payload,
-			},
-		};
-	},
-	createStaticLog: ({id, ...payload}) => {
-		return {
-			type: 'ADD_STATIC_LOG',
-			payload: {
-				id: id || _.uniqueId('staticLog'),
-				startTime: process.hrtime(),
-				...payload,
-			},
-		};
-	},
-	updateLog: ({id, ...rest}) => {
-		const log = getLog(id);
-		if (!log) {
+	removeActiveLog: id => {
+		if (!getActiveLog(id)) {
 			return null;
 		}
 
 		return {
-			type: 'UPDATE_LOG',
+			type: REMOVE_ACTIVE_LOG,
+			payload: {id},
+		};
+	},
+	addStaticLog: ({id, ...payload}) => {
+		if (getStaticLog(id)) {
+			return {
+				type: ADD_STATIC_LOG,
+				payload: {
+					id: uuid(),
+					timestamp: new Date().toLocaleTimeString('en-US'),
+					type: 'message',
+					status: 'warning',
+					text: 'Attempting to add duplicate static logs',
+				},
+			};
+		}
+
+		return {
+			type: ADD_STATIC_LOG,
 			payload: {
-				id,
-				...rest,
+				id: id || uuid(),
+				timestamp: new Date().toLocaleTimeString('en-US'),
+				...payload,
 			},
 		};
 	},
-	createMessage: ({text, status}) => {
-		return actions.createStaticLog({
+	createMessage: payload => {
+		return actions.addStaticLog({
 			type: 'message',
-			status,
-			text,
+			...payload,
 		});
 	},
-	createSequence: ({current, ...rest}) => {
-		return actions.createLog({
-			type: 'sequence',
-			status: 'pending',
-			current: current || 0,
-			...rest,
-		});
+	createJob: ({id, text, parent = null}) => {
+		if (!id) {
+			id = uuid();
+		}
+
+		const actionsToEmit = [
+			{
+				type: ADD_JOB,
+				payload: {
+					id,
+					type: 'job',
+					startTime: process.hrtime(),
+					timestamp: new Date().toLocaleTimeString('en-US'),
+					text,
+					parent,
+					status: 'started',
+					jobs: [],
+					completed: [],
+				},
+			},
+		];
+
+		if (parent) {
+			const {jobs} = getJob(parent);
+			actionsToEmit.push({
+				type: UPDATE_JOB,
+				payload: {
+					id: parent,
+					jobs: [...jobs, id],
+				},
+			});
+		}
+
+		return actionsToEmit;
 	},
-	updateSequence: ({id, add, ...rest}) => {
-		const log = getLog(id);
-		if (!log) {
-			return null;
-		}
-
-		let total = rest.total || log.total || 0;
-		if (add) {
-			total += add;
-		}
-
+	beginJob: id => {
+		const job = getJob(id);
 		return {
-			type: 'UPDATE_LOG',
+			type: ADD_ACTIVE_LOG,
 			payload: {
-				id,
-				...rest,
-				total,
+				type: 'job',
+				...job,
 			},
 		};
 	},
-	completeSequence: id => {
-		const log = getLog(id);
-		if (!log) {
-			return null;
-		}
+	completeJob: id => {
+		const job = getJob(id);
 
-		return {
-			type: 'MAKE_LOG_STATIC',
-			payload: {
-				id,
-				current: log.total,
-				status: 'complete',
-			},
-		};
-	},
-	tick: (id, n = 1) => {
-		const log = getLog(id);
-		if (!log) {
-			return null;
+		if (!job) {
+			return {
+				type: ADD_STATIC_LOG,
+				payload: {
+					id: uuid(),
+					type: 'message',
+					status: 'warning',
+					text: [`trying to complete non-existent job`, id],
+				},
+			};
 		}
 
 		const payload = {
-			id,
-			current: log.current + n,
+			...job,
+			status: 'complete',
+			duration: getElapsedTime(job),
 		};
+
+		if (job.parent) {
+			return {type: UPDATE_JOB, payload};
+		}
 
 		return [
 			{
-				type: 'ADD_STATIC_LOG',
-				payload: {
-					...log,
-					...payload,
-					status: 'static',
-				},
+				type: REMOVE_ACTIVE_LOG,
+				payload: {id},
 			},
-			{
-				type: 'UPDATE_LOG',
-				payload,
-			},
+			actions.addStaticLog(denormalizeJob(payload)),
 		];
 	},
 };
 
+function getJob(id) {
+	return store.getState().jobs[id];
+}
+
+function getActiveLog(id) {
+	return _.find(store.getState().logs.active, o => o.id === id);
+}
+
+function getStaticLog(id) {
+	return _.find(store.getState().logs.static, o => o.id === id);
+}
+
+function denormalizeJob(job) {
+	if (typeof job === 'string') {
+		job = getJob(job);
+	}
+
+	if (_.isEmpty(job.jobs)) {
+		return {
+			...job,
+			jobs: [],
+		};
+	}
+
+	return {
+		...job,
+		jobs: job.jobs.reduce((arr, jobId) => {
+			return [...arr, denormalizeJob(jobId)];
+		}, []),
+	};
+}
+
+function getElapsedTime({startTime}) {
+	const elapsed = process.hrtime(startTime);
+	return _.round(convertHrtime(elapsed).seconds, 2);
+}
+
 module.exports = {
-	actions: Redux.bindActionCreators(actions, intrface.dispatch),
-	...intrface,
+	actions: bindActionCreators(actions, dispatch),
+	store,
 };

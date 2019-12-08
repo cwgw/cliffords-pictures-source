@@ -7,9 +7,42 @@ const imageminPngquant = require(`imagemin-pngquant`);
 const imageminWebp = require(`imagemin-webp`);
 const sharp = require('sharp');
 
+const reporter = require('../reporter');
 const io = require('./io');
 
-module.exports = async ({file, reporter, sequence, options}) => {
+async function compressJpg(sharpBuffer, outputPath) {
+	const imageminBuffer = await imagemin.buffer(sharpBuffer, {
+		plugins: [imageminMozjpeg({quality: 90})],
+	});
+	await fs.writeFile(outputPath, imageminBuffer);
+}
+
+async function compressPng(sharpBuffer, outputPath) {
+	const imageminBuffer = await imagemin.buffer(sharpBuffer, {
+		plugins: [
+			imageminPngquant({
+				quality: 100,
+			}),
+		],
+	});
+	await fs.writeFile(outputPath, imageminBuffer);
+}
+
+async function compressWebP(sharpBuffer, outputPath) {
+	const imageminBuffer = await imagemin.buffer(sharpBuffer, {
+		plugins: [imageminWebp({quality: 90})],
+	});
+	await fs.writeFile(outputPath, imageminBuffer);
+}
+
+const save = {
+	jpg: compressJpg,
+	jpeg: compressJpg,
+	png: compressPng,
+	webp: compressWebP,
+};
+
+module.exports = async ({file, options, parentJob}) => {
 	const id = file.name;
 	const meta = await io.getPhotoMeta(id, options);
 	const rotate = get(meta, 'transform.rotate', 0);
@@ -20,87 +53,47 @@ module.exports = async ({file, reporter, sequence, options}) => {
 		[]
 	);
 
-	sequence.update({
-		text: `creating image variants`,
-		add: imageVariants.length,
-	});
+	const job = parentJob.add(`create image variants`);
 
 	const pendingImageTasks = imageVariants.map(({width, format}) => {
-		const outputPath = io.formatPath.webImage(
-			{
-				id,
-				width,
-				ext: format,
-			},
-			options
-		);
-		fs.ensureDirSync(path.parse(outputPath).dir);
-		return imagePipeline
-			.clone()
-			.resize({width})
-			.png({
-				adaptiveFiltering: false,
-				force: format === 'png',
-			})
-			.webp({
-				quality: 90,
-				force: format === 'webp',
-			})
-			.jpeg({
-				quality: 100,
-				force: format === 'jpg' || format === 'jpeg',
-			})
-			.toBuffer()
-			.then(buffer => {
-				sequence.update(`creating ${outputPath}`);
-				switch (format) {
-					case 'jpg':
-					case 'jpeg':
-						return compressJpg(buffer, outputPath);
-					case 'png':
-						return compressPng(buffer, outputPath);
-					case 'webp':
-						return compressWebP(buffer, outputPath);
-					default:
-						reporter.warn(`format "${format}" is invalid`);
-						return null;
-				}
-			})
-			.then(() => {
-				sequence.step();
-			})
-			.catch(error => {
+		return (async () => {
+			const outputPath = io.formatPath.webImage(
+				{
+					id,
+					width,
+					ext: format,
+				},
+				options
+			);
+			fs.ensureDirSync(path.parse(outputPath).dir);
+
+			try {
+				const imageJob = job.add(`create ${path.relative('./', outputPath)}`);
+				const buffer = await imagePipeline
+					.clone()
+					.resize({width})
+					.png({
+						adaptiveFiltering: false,
+						force: format === 'png',
+					})
+					.webp({
+						quality: 90,
+						force: format === 'webp',
+					})
+					.jpeg({
+						quality: 100,
+						force: format === 'jpg' || format === 'jpeg',
+					})
+					.toBuffer();
+
+				await save[format](buffer, outputPath);
+				imageJob.finish();
+			} catch (error) {
 				reporter.panic(`Couldn't create ${outputPath}`, error);
-			});
+			}
+		})();
 	});
 
-	return Promise.all(pendingImageTasks);
+	await Promise.all(pendingImageTasks);
+	job.finish();
 };
-
-function compressPng(sharpBuffer, outputPath) {
-	return imagemin
-		.buffer(sharpBuffer, {
-			plugins: [
-				imageminPngquant({
-					quality: 100,
-				}),
-			],
-		})
-		.then(imageminBuffer => fs.writeFile(outputPath, imageminBuffer));
-}
-
-function compressJpg(sharpBuffer, outputPath) {
-	return imagemin
-		.buffer(sharpBuffer, {
-			plugins: [imageminMozjpeg({quality: 90})],
-		})
-		.then(imageminBuffer => fs.writeFile(outputPath, imageminBuffer));
-}
-
-function compressWebP(sharpBuffer, outputPath) {
-	return imagemin
-		.buffer(sharpBuffer, {
-			plugins: [imageminWebp({quality: 90})],
-		})
-		.then(imageminBuffer => fs.writeFile(outputPath, imageminBuffer));
-}

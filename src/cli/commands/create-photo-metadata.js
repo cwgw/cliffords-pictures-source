@@ -7,6 +7,7 @@ const sharp = require('sharp');
 
 require('dotenv').config({path: `.env`});
 
+const reporter = require('../reporter');
 const io = require('./io');
 
 const faceApi = axios.create({
@@ -26,7 +27,8 @@ const rateLimiter = new Bottleneck({
 	minTime: 3334, // 18 per minute
 });
 
-module.exports = async ({file, reporter, sequence, options}) => {
+module.exports = async ({file, parentJob, options}) => {
+	const job = parentJob.add('create metadata');
 	try {
 		const imagePipeline = await sharp(file.filePath);
 		const aspectRatio = await getAspectRatio({imagePipeline});
@@ -39,33 +41,31 @@ module.exports = async ({file, reporter, sequence, options}) => {
 			location: null,
 		};
 
-		sequence.update({add: 1, text: 'creating base64 string'});
+		const base64 = job.add('create base64 string');
 		meta.base64 = await getBase64({imagePipeline, reporter});
-		sequence.step();
+		base64.finish();
 
-		sequence.update({add: 1, text: 'searching for faces'});
+		const faceJob = job.add('search for faces');
 		const {faces, transform} = await getFaces({
 			meta,
 			imagePipeline,
-			reporter,
-			sequence,
+			parentJob: faceJob,
 		});
 		meta.faces = faces;
 		meta.transform = transform;
-		sequence.step();
-		// Meta.faces = [];
+		faceJob.finish();
 
-		sequence.update({add: 1, text: 'saving photo metadata'});
+		const savemeta = job.add('save photo metadata');
 		await io.savePhotoMeta(meta, {options, force: true});
-		sequence.step();
+		savemeta.finish();
 
-		return Promise.resolve();
+		job.finish();
 	} catch (error) {
 		reporter.panic('Could not create metadata.', error);
 	}
 };
 
-async function getAspectRatio({imagePipeline, reporter}) {
+async function getAspectRatio({imagePipeline}) {
 	const {width, height} = await imagePipeline
 		.metadata()
 		.catch(error => reporter.panic(error));
@@ -83,7 +83,7 @@ async function getBase64({imagePipeline, reporter}) {
 	return `data:image/png;base64,${buffer.toString(`base64`)}`;
 }
 
-async function getFaces({meta, imagePipeline, reporter, sequence}) {
+async function getFaces({meta, imagePipeline, parentJob}) {
 	const {id, aspectRatio} = meta;
 	let width = 1536;
 	let height = Math.round(width / aspectRatio);
@@ -93,10 +93,7 @@ async function getFaces({meta, imagePipeline, reporter, sequence}) {
 
 	do {
 		rotate = i * 90;
-		sequence.update({
-			add: 1,
-			text: `detecting faces: rotation ${rotate}deg`,
-		});
+		const job = parentJob.add(`detect faces: rotation ${rotate}deg`);
 		try {
 			if (i) {
 				// Swap width and height with each (90deg) rotation
@@ -117,13 +114,11 @@ async function getFaces({meta, imagePipeline, reporter, sequence}) {
 					reporter.panic(error);
 				}
 			});
-			sequence.step();
+			job.finish();
 		} catch (error) {
 			reporter.panic('Could not complete request.', error);
 		}
 	} while (faces.length < 1 && ++i < 4);
-
-	sequence.update(`${faces.length} faces found`);
 
 	faces = faces.map(
 		({faceId, faceRectangle: r, faceAttributes: attributes}) => {

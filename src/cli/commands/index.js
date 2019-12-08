@@ -14,6 +14,8 @@ const createMetadata = require('./create-photo-metadata');
 const createImages = require('./create-web-ready-images');
 const parseScans = require('./create-photos-from-scans');
 
+const queue = new PQueue({concurrency: 8});
+
 module.exports = ({input, options}) => {
 	const nothingToDo = () => {
 		reporter.exit(`There's nothing to do. Exiting process early...`);
@@ -48,20 +50,23 @@ module.exports = ({input, options}) => {
 
 	if (options.parseScans) {
 		fs.ensureDirSync(path.resolve(options.dest.src));
-		return Promise.all(
-			files.map((file, i, arr) => {
-				const sequence = reporter.sequence({
-					prefixText: `${i} of ${arr.length}: ${file.name}`,
-					text: 'starting',
-				});
-				return parseScans({
+		queue.addAll(
+			files.map((file, i, arr) => async () => {
+				const parentJob = reporter.addJob(
+					`${i} of ${arr.length}: ${file.name}`
+				);
+				await parseScans({
 					file,
 					options,
-					reporter,
-					sequence,
-				}).then(() => sequence.succeed());
+					parentJob,
+				});
+				parentJob.finish();
 			})
 		);
+		queue.onIdle().then(() => {
+			reporter.success('done');
+		});
+		return;
 	}
 
 	const tasks = [];
@@ -79,30 +84,28 @@ module.exports = ({input, options}) => {
 		nothingToDo();
 	}
 
-	const queue = new PQueue({concurrency: 8});
-
 	reporter.info(`Processing ${files.length} files`);
 
-	const pendingTasks = files.map((file, i, arr) => () => {
-		const sequence = reporter.sequence({
-			prefixText: `${i} of ${arr.length}: ${file.name}`,
-			text: 'starting',
-		});
-		return Promise.all(
+	const pendingTasks = files.map((file, i, arr) => async () => {
+		const parentJob = reporter.addJob(
+			`${i + 1} of ${arr.length}: ${file.name}`
+		);
+		parentJob.start();
+		await Promise.all(
 			tasks.map(func => {
 				return func({
 					file,
 					options,
-					reporter,
-					sequence,
+					parentJob,
 				});
 			})
-		).then(() => sequence.succeed());
+		);
+		parentJob.finish();
 	});
 
 	queue.addAll(pendingTasks);
 
 	queue.onIdle().then(() => {
-		reporter.success('done');
+		reporter.success('Done');
 	});
 };
