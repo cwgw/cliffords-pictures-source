@@ -7,7 +7,6 @@ const ADD_ACTIVE_LOG = 'ADD_ACTIVE_LOG';
 const REMOVE_ACTIVE_LOG = 'REMOVE_ACTIVE_LOG';
 const ADD_STATIC_LOG = 'ADD_STATIC_LOG';
 const ADD_JOB = 'ADD_JOB';
-const REMOVE_JOB = 'REMOVE_JOB';
 const UPDATE_JOB = 'UPDATE_JOB';
 
 const initialState = {
@@ -44,7 +43,6 @@ const reducer = (state, action) => {
 
 		case ADD_STATIC_LOG: {
 			const {payload} = action;
-			// Console.log(payload)
 			return {
 				...state,
 				logs: {
@@ -65,16 +63,6 @@ const reducer = (state, action) => {
 						...payload,
 					},
 				},
-			};
-		}
-
-		case REMOVE_JOB: {
-			const {id} = action.payload;
-			const jobs = {...state.jobs};
-			delete jobs[id];
-			return {
-				...state,
-				jobs,
 			};
 		}
 
@@ -125,17 +113,12 @@ const actions = {
 		};
 	},
 	addStaticLog: ({id, ...payload}) => {
+		// Static logs must be unique
 		if (getStaticLog(id)) {
-			return {
-				type: ADD_STATIC_LOG,
-				payload: {
-					id: uuid(),
-					timestamp: new Date().toLocaleTimeString('en-US'),
-					type: 'message',
-					status: 'warning',
-					text: 'Attempting to add duplicate static logs',
-				},
-			};
+			return actions.createMessage({
+				status: 'warning',
+				text: 'Attempting to add duplicate static log',
+			});
 		}
 
 		return {
@@ -177,16 +160,28 @@ const actions = {
 
 		if (parent) {
 			const {jobs} = getJob(parent);
-			actionsToEmit.push({
-				type: UPDATE_JOB,
-				payload: {
+			actionsToEmit.push(
+				actions.updateJob({
 					id: parent,
 					jobs: [...jobs, id],
-				},
-			});
+				})
+			);
 		}
 
 		return actionsToEmit;
+	},
+	updateJob: ({id, ...payload}) => {
+		if (!getJob(id)) {
+			return actions.createMessage({
+				status: 'warning',
+				text: `Attempting to update a job that doesn't exist`,
+			});
+		}
+
+		return {
+			type: UPDATE_JOB,
+			payload: {id, ...payload},
+		};
 	},
 	beginJob: id => {
 		const job = getJob(id);
@@ -202,15 +197,10 @@ const actions = {
 		const job = getJob(id);
 
 		if (!job) {
-			return {
-				type: ADD_STATIC_LOG,
-				payload: {
-					id: uuid(),
-					type: 'message',
-					status: 'warning',
-					text: [`trying to complete non-existent job`, id],
-				},
-			};
+			return actions.createMessage({
+				status: 'warning',
+				text: [`trying to complete non-existent job`, id],
+			});
 		}
 
 		const payload = {
@@ -220,7 +210,7 @@ const actions = {
 		};
 
 		if (job.parent) {
-			return {type: UPDATE_JOB, payload};
+			return actions.updateJob(payload);
 		}
 
 		return [
@@ -234,14 +224,26 @@ const actions = {
 };
 
 function getJob(id) {
+	if (!id) {
+		return;
+	}
+
 	return store.getState().jobs[id];
 }
 
 function getActiveLog(id) {
+	if (!id) {
+		return;
+	}
+
 	return _.find(store.getState().logs.active, o => o.id === id);
 }
 
 function getStaticLog(id) {
+	if (!id) {
+		return;
+	}
+
 	return _.find(store.getState().logs.static, o => o.id === id);
 }
 

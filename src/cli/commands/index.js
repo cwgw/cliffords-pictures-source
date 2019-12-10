@@ -16,7 +16,7 @@ const parseScans = require('./create-photos-from-scans');
 
 const queue = new PQueue({concurrency: 8});
 
-module.exports = ({input, options}) => {
+module.exports = async (input, options) => {
 	const nothingToDo = () => {
 		reporter.exit(`There's nothing to do. Exiting process early...`);
 	};
@@ -55,17 +55,21 @@ module.exports = ({input, options}) => {
 				const parentJob = reporter.addJob(
 					`${i} of ${arr.length}: ${file.name}`
 				);
-				await parseScans({
-					file,
-					options,
+				await parseScans(file, {
+					...options,
 					parentJob,
 				});
 				parentJob.finish();
 			})
 		);
-		queue.onIdle().then(() => {
-			reporter.success('done');
-		});
+
+		try {
+			await queue.onIdle()
+			reporter.success('Done');
+		} catch (error) {
+			reporter.error(error);
+		}
+
 		return;
 	}
 
@@ -91,21 +95,18 @@ module.exports = ({input, options}) => {
 			`${i + 1} of ${arr.length}: ${file.name}`
 		);
 		parentJob.start();
-		await Promise.all(
-			tasks.map(func => {
-				return func({
-					file,
-					options,
-					parentJob,
-				});
-			})
-		);
+		for (let task of tasks) {
+			await task(file, {...options, parentJob});
+		}
 		parentJob.finish();
 	});
 
 	queue.addAll(pendingTasks);
 
-	queue.onIdle().then(() => {
+	try {
+		await queue.onIdle()
 		reporter.success('Done');
-	});
+	} catch (error) {
+		reporter.error(error);
+	}
 };
