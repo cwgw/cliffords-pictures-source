@@ -8,92 +8,79 @@ const imageminWebp = require(`imagemin-webp`);
 const sharp = require('sharp');
 
 const reporter = require('../reporter');
-const io = require('./io');
+// Const io = require('./io');
 
-async function compressJpg(sharpBuffer, outputPath) {
-	const imageminBuffer = await imagemin.buffer(sharpBuffer, {
-		plugins: [imageminMozjpeg({quality: 90})],
-	});
-	await fs.writeFile(outputPath, imageminBuffer);
-}
-
-async function compressPng(sharpBuffer, outputPath) {
-	const imageminBuffer = await imagemin.buffer(sharpBuffer, {
-		plugins: [
-			imageminPngquant({
-				quality: 100,
-			}),
-		],
-	});
-	await fs.writeFile(outputPath, imageminBuffer);
-}
-
-async function compressWebP(sharpBuffer, outputPath) {
-	const imageminBuffer = await imagemin.buffer(sharpBuffer, {
-		plugins: [imageminWebp({quality: 90})],
-	});
-	await fs.writeFile(outputPath, imageminBuffer);
-}
-
-const save = {
-	jpg: compressJpg,
-	jpeg: compressJpg,
-	png: compressPng,
-	webp: compressWebP,
-};
-
-module.exports = async ({file, options, parentJob}) => {
+module.exports = async (file, {cache, parentJob, dest, imageSizes, imageFormats}) => {
+	const job = parentJob.add(`create web-ready images`);
 	const id = file.name;
-	const meta = await io.getPhotoMeta(id, options);
+	const meta = cache.get(['photos', id]).value();
 	const rotate = get(meta, 'transform.rotate', 0);
 	const imagePipeline = sharp(file.filePath).rotate(rotate);
-	const imageVariants = options.imageSizes.reduce(
+	const imageVariants = imageSizes.reduce(
 		(arr, width) =>
-			arr.concat(options.imageFormats.map(format => ({format, width}))),
+			arr.concat(imageFormats.map(format => ({format, width}))),
 		[]
 	);
 
-	const job = parentJob.add(`create image variants`);
+	const outputDir = path.resolve(dest.web, id);
+	fs.ensureDirSync(outputDir);
 
-	const pendingImageTasks = imageVariants.map(({width, format}) => {
-		return (async () => {
-			const outputPath = io.formatPath.webImage(
-				{
-					id,
-					width,
-					ext: format,
-				},
-				options
-			);
-			fs.ensureDirSync(path.parse(outputPath).dir);
+	const pendingImageTasks = imageVariants.map(async ({width, format}) => {
+		try {
+			const outputPath = path.resolve(outputDir, `${width}.${format}`);
+			const buffer = await imagePipeline
+				.clone()
+				.resize({width})
+				.png({
+					adaptiveFiltering: false,
+					force: format === 'png',
+				})
+				.webp({
+					quality: 90,
+					force: format === 'webp',
+				})
+				.jpeg({
+					quality: 100,
+					force: format === 'jpg' || format === 'jpeg',
+				})
+				.toBuffer();
 
-			try {
-				const imageJob = job.add(`create ${path.relative('./', outputPath)}`);
-				const buffer = await imagePipeline
-					.clone()
-					.resize({width})
-					.png({
-						adaptiveFiltering: false,
-						force: format === 'png',
-					})
-					.webp({
-						quality: 90,
-						force: format === 'webp',
-					})
-					.jpeg({
-						quality: 100,
-						force: format === 'jpg' || format === 'jpeg',
-					})
-					.toBuffer();
-
-				await save[format](buffer, outputPath);
-				imageJob.finish();
-			} catch (error) {
-				reporter.panic(`Couldn't create ${outputPath}`, error);
-			}
-		})();
+			const image = await compress(buffer, format);
+			await fs.writeFile(outputPath, image);
+		} catch (error) {
+			reporter.panic(`Couldn't create ${outputPath}`, error);
+		}
 	});
 
 	await Promise.all(pendingImageTasks);
+
+	const note = [
+		['sizes', imageSizes],
+		['formats', imageFormats],
+		['total', imageVariants.length],
+	]
+		.map(([key, val]) => `${key}: ${val}`)
+		.join(', ');
+
+	job.update(note);
 	job.finish();
 };
+
+async function compress(sharpBuffer, format) {
+	let plugins;
+	switch (format) {
+		case 'jpg':
+		case 'jpeg':
+			plugins = [imageminMozjpeg({quality: 90})];
+			break;
+		case 'webp':
+			plugins = [imageminWebp({quality: 90})];
+			break;
+		case 'png':
+		default:
+			plugins = [imageminPngquant({quality: 100})];
+			break;
+	}
+
+	return imagemin.buffer(sharpBuffer, {plugins});
+}

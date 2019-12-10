@@ -1,14 +1,16 @@
 /* eslint-disable no-await-in-loop */
 
+const path = require('path');
 const axios = require('axios');
 const Bottleneck = require('bottleneck');
 const round = require('lodash/round');
 const sharp = require('sharp');
+const fs = require('fs-extra');
 
 require('dotenv').config({path: `.env`});
 
 const reporter = require('../reporter');
-const io = require('./io');
+// Const io = require('./io');
 
 const faceApi = axios.create({
 	baseURL: 'https://westus2.api.cognitive.microsoft.com/face/v1.0/detect',
@@ -27,65 +29,73 @@ const rateLimiter = new Bottleneck({
 	minTime: 3334, // 18 per minute
 });
 
-module.exports = async ({file, parentJob, options}) => {
+module.exports = async (file, {parentJob, dest, cache}) => {
 	const job = parentJob.add('create metadata');
 	try {
-		const imagePipeline = await sharp(file.filePath);
-		const aspectRatio = await getAspectRatio({imagePipeline});
+		const id = file.name;
+		const cachedData = cache.get(['photos', id]).value();
+		if (cachedData) {
+			job.update('using cached data');
+			await savePhotoMeta(cachedData, {dir: dest.web, parentJob: job}, true);
+			return;
+		}
 
-		const meta = {
-			id: file.name,
+		const imagePipeline = await sharp(file.filePath);
+		const aspectRatio = await getAspectRatio(imagePipeline);
+		const {faces, transform} = await getFaces(imagePipeline, {
+			id,
 			aspectRatio,
+			parentJob: job,
+		});
+		const base64 = await getBase64(imagePipeline, {transform, parentJob: job});
+
+		const data = {
+			id,
+			base64,
+			aspectRatio,
+			transform,
+			faces,
 			people: null,
 			date: null,
 			location: null,
 		};
 
-		const base64 = job.add('create base64 string');
-		meta.base64 = await getBase64({imagePipeline, reporter});
-		base64.finish();
+		cache.set(['photos', id], data).write();
 
-		const faceJob = job.add('search for faces');
-		const {faces, transform} = await getFaces({
-			meta,
-			imagePipeline,
-			parentJob: faceJob,
-		});
-		meta.faces = faces;
-		meta.transform = transform;
-		faceJob.finish();
-
-		const savemeta = job.add('save photo metadata');
-		await io.savePhotoMeta(meta, {options, force: true});
-		savemeta.finish();
-
-		job.finish();
+		await savePhotoMeta(data, {dir: dest.web, parentJob: job}, true);
 	} catch (error) {
 		reporter.panic('Could not create metadata.', error);
+	} finally {
+		job.finish();
 	}
 };
 
-async function getAspectRatio({imagePipeline}) {
+async function getAspectRatio(imagePipeline) {
 	const {width, height} = await imagePipeline
 		.metadata()
 		.catch(error => reporter.panic(error));
 	return width / height;
 }
 
-async function getBase64({imagePipeline, reporter}) {
+async function getBase64(imagePipeline, {transform, parentJob}) {
+	const job = parentJob.add('create base64 string');
 	const buffer = await imagePipeline
 		.clone()
 		.resize({width: 16})
+		.rotate(transform ? transform.rotate : 0)
 		.blur(1.5)
 		.png({force: true})
 		.toBuffer()
 		.catch(error => reporter.panic(error));
+
+	job.finish();
 	return `data:image/png;base64,${buffer.toString(`base64`)}`;
 }
 
-async function getFaces({meta, imagePipeline, parentJob}) {
-	const {id, aspectRatio} = meta;
-	let width = 1536;
+async function getFaces(imagePipeline, {id, aspectRatio, parentJob}) {
+	const job = parentJob.add('find faces');
+
+	let width = 1920;
 	let height = Math.round(width / aspectRatio);
 	let rotate;
 	let faces = [];
@@ -93,7 +103,6 @@ async function getFaces({meta, imagePipeline, parentJob}) {
 
 	do {
 		rotate = i * 90;
-		const job = parentJob.add(`detect faces: rotation ${rotate}deg`);
 		try {
 			if (i) {
 				// Swap width and height with each (90deg) rotation
@@ -114,11 +123,20 @@ async function getFaces({meta, imagePipeline, parentJob}) {
 					reporter.panic(error);
 				}
 			});
-			job.finish();
 		} catch (error) {
 			reporter.panic('Could not complete request.', error);
 		}
 	} while (faces.length < 1 && ++i < 4);
+
+	if (faces.length > 0) {
+		job.update(
+			`found ${faces.length}, with ${
+				rotate > 0 ? rotate + 'deg' : 'no'
+			} rotation`
+		);
+	} else {
+		job.update('found none');
+	}
 
 	faces = faces.map(
 		({faceId, faceRectangle: r, faceAttributes: attributes}) => {
@@ -141,6 +159,8 @@ async function getFaces({meta, imagePipeline, parentJob}) {
 		}
 	);
 
+	job.finish();
+
 	return {
 		faces,
 		transform: faces.length > 0 && rotate % 360 ? {rotate} : null,
@@ -154,4 +174,21 @@ function createFaceID({imageId, center: {x, y}}) {
 			.padStart(2, '0')
 	);
 	return `${imageId}-${cx}-${cy}`;
+}
+
+async function savePhotoMeta(data, {dir, parentJob}, force = false) {
+	const filePath = path.resolve(dir, data.id, `data.json`);
+	const job = parentJob.add(`save data file ${path.relative('./', filePath)}`);
+	if (fs.existsSync(filePath) && !force) {
+		reporter.warning(
+			`Cannot save metadata file`,
+			`${path.relative('./', filePath)} already exists`,
+			`To force overwrite, call with truthy second argument`
+		);
+		return;
+	}
+
+	await fs.ensureDir(path.parse(filePath).dir);
+	await fs.writeJSON(filePath, data, {spaces: 2});
+	job.finish();
 }

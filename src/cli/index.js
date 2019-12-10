@@ -3,7 +3,8 @@
 const yargs = require('yargs');
 
 const config = require('../config');
-const report = require('./reporter');
+const cache = require('./cache')(config);
+const reporter = require('./reporter');
 const run = require('./commands');
 
 const cli = yargs();
@@ -38,8 +39,8 @@ const {_: input, ...argv} = cli
 	})
 	.wrap(cli.terminalWidth())
 	.fail((msg, err) => {
-		report.error(msg, err);
+		reporter.error(msg, err);
 	})
 	.parse(process.argv.filter(a => !(a === __dirname || a.endsWith('node'))));
 
-run({input, options: {...config, ...argv}});
+run(input, {...config, ...argv, cache});
