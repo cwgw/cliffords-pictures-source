@@ -1,3 +1,5 @@
+/* eslint-disable no-await-in-loop */
+
 /**
  * To do:
  *  - add 'clean' flag that wipes destination dir before starting
@@ -64,7 +66,7 @@ module.exports = async (input, options) => {
 		);
 
 		try {
-			await queue.onIdle()
+			await queue.onIdle();
 			reporter.success('Done');
 		} catch (error) {
 			reporter.error(error);
@@ -95,16 +97,17 @@ module.exports = async (input, options) => {
 			`${i + 1} of ${arr.length}: ${file.name}`
 		);
 		parentJob.start();
-		for (let task of tasks) {
+		for (const task of tasks) {
 			await task(file, {...options, parentJob});
 		}
+
 		parentJob.finish();
 	});
 
 	queue.addAll(pendingTasks);
 
 	try {
-		await queue.onIdle()
+		await queue.onIdle();
 		reporter.success('Done');
 	} catch (error) {
 		reporter.error(error);

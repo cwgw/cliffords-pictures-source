@@ -17,14 +17,14 @@ function formatDuration(duration) {
 }
 
 const Complete = ({
-	timestamp,
 	duration,
+	indent,
+	isChild,
+	isLast,
+	jobs,
 	status,
 	text,
-	jobs,
-	indent = '',
-	isChild = false,
-	isLast = false,
+	timestamp,
 }) => {
 	const isParent = jobs && jobs.length > 0;
 	const pipe = isChild ? (
@@ -58,12 +58,33 @@ const Complete = ({
 	);
 };
 
+Complete.propTypes = {
+	duration: PropTypes.number.isRequired,
+	indent: PropTypes.string,
+	isChild: PropTypes.bool,
+	isLast: PropTypes.bool,
+	jobs: PropTypes.array.isRequired,
+	status: PropTypes.string.isRequired,
+	text: PropTypes.string.isRequired,
+	timestamp: PropTypes.string.isRequired,
+};
+
+Complete.defaultProps = {
+	indent: '',
+	isChild: false,
+	isLast: false,
+};
+
 const Pending = ({text}) => {
 	return (
 		<Log timestamp={new Date().toLocaleTimeString('en-US')}>
 			<Spinner type="dots" /> <Box textWrap="truncate-start">{text}</Box>
 		</Log>
 	);
+};
+
+Pending.propTypes = {
+	text: PropTypes.string.isRequired,
 };
 
 export default {

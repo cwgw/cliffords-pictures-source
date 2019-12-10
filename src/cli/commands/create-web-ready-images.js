@@ -10,15 +10,17 @@ const sharp = require('sharp');
 const reporter = require('../reporter');
 // Const io = require('./io');
 
-module.exports = async (file, {cache, parentJob, dest, imageSizes, imageFormats}) => {
+module.exports = async (
+	file,
+	{cache, parentJob, dest, imageSizes, imageFormats}
+) => {
 	const job = parentJob.add(`create web-ready images`);
 	const id = file.name;
 	const meta = cache.get(['photos', id]).value();
 	const rotate = get(meta, 'transform.rotate', 0);
 	const imagePipeline = sharp(file.filePath).rotate(rotate);
 	const imageVariants = imageSizes.reduce(
-		(arr, width) =>
-			arr.concat(imageFormats.map(format => ({format, width}))),
+		(arr, width) => arr.concat(imageFormats.map(format => ({format, width}))),
 		[]
 	);
 
@@ -26,8 +28,8 @@ module.exports = async (file, {cache, parentJob, dest, imageSizes, imageFormats}
 	fs.ensureDirSync(outputDir);
 
 	const pendingImageTasks = imageVariants.map(async ({width, format}) => {
+		const outputPath = path.resolve(outputDir, `${width}.${format}`);
 		try {
-			const outputPath = path.resolve(outputDir, `${width}.${format}`);
 			const buffer = await imagePipeline
 				.clone()
 				.resize({width})
@@ -48,7 +50,10 @@ module.exports = async (file, {cache, parentJob, dest, imageSizes, imageFormats}
 			const image = await compress(buffer, format);
 			await fs.writeFile(outputPath, image);
 		} catch (error) {
-			reporter.panic(`Couldn't create ${outputPath}`, error);
+			reporter.panic(
+				`Couldn't create ${path.relative('./', outputPath)}`,
+				error
+			);
 		}
 	});
 

@@ -21,6 +21,7 @@ const Message = ({text, timestamp, status}) => {
 Message.propTypes = {
 	status: PropTypes.string.isRequired,
 	text: PropTypes.oneOfType([PropTypes.string, PropTypes.array]).isRequired,
+	timestamp: PropTypes.string.isRequired,
 };
 
 export default Message;

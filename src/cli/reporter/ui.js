@@ -1,39 +1,44 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import {Provider, connect} from 'react-redux';
 import {render, Box, Static} from 'ink';
 
-import _ from 'lodash';
 import {store} from './state';
 
 import Message from './components/message';
 import Job from './components/job';
 
-const renderLog = ({type, ...log}) => {
-	switch (type) {
-		case 'job':
-			if (log.status === 'complete') {
-				return <Job.Complete key={type + log.status + log.id} {...log} />;
-			}
-
-			return <Job.Pending key={type + log.status + log.id} {...log} />;
-		case 'message':
-		default:
-			return <Message key={type + log.status + log.id} {...log} />;
-	}
-};
-
 const Logs = ({logs}) => {
 	return (
 		<Box flexDirection="column" width="100%">
-			<Static>{logs.static.map(renderLog)}</Static>
+			<Static>
+				{logs.static.map(log => {
+					switch (log.type) {
+						case 'job':
+							return <Job.Complete key={log.id} {...log} />;
+						case 'message':
+						default:
+							return <Message key={log.id} {...log} />;
+					}
+				})}
+			</Static>
 			{logs.active.length > 0 ? (
 				<>
 					{`\n`}
-					{logs.active.map(renderLog)}
+					{logs.active.map(log => (
+						<Job.Pending key={log.id} {...log} />
+					))}
 				</>
 			) : null}
 		</Box>
 	);
+};
+
+Logs.propTypes = {
+	logs: PropTypes.shape({
+		active: PropTypes.array,
+		static: PropTypes.array,
+	}).isRequired,
 };
 
 const ConnectedLogs = connect(state => ({logs: state.logs}))(Logs);
