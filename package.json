@@ -1,7 +1,7 @@
 {
 	"name": "cliffords-pictures-source",
 	"version": "0.0.0",
-	"license": "MIT",
+	"description": "Source photos for and build scripts for cliffords.pictures",
 	"bin": {
 		"cliffs-pics": "lib/index.js"
 	},
@@ -57,6 +57,10 @@
 		"regenerator-runtime": "^0.13.3",
 		"xo": "^0.25.3"
 	},
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cwgw/cliffords-pictures"
+  },
 	"babel": {
 		"presets": [
 			"@babel/preset-react",
