@@ -1,43 +1,20 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Box, Color} from 'ink';
+import {Box} from 'ink';
 
-const createLabel = (text, color) => (...props) => (
-	<Color {...{[color]: true, ...props}}>{text.padEnd(8)}</Color>
-);
-
-const getLabel = status => {
-	switch (status) {
-		case 'success':
-			return createLabel(`success`, `green`);
-		case 'warning':
-			return createLabel(`warning`, `yellow`);
-		case 'log':
-			return createLabel(`log`, `gray`);
-		case 'info':
-			return createLabel(`info`, `cyan`);
-		case 'error':
-		case 'panic':
-			return createLabel(`error`, `red`);
-		default:
-			return createLabel('', `blue`);
-	}
-};
+import Log from './log';
 
 const Message = ({text, timestamp, status}) => {
-	const TextLabel = getLabel(status);
 	return (
-		<Box textWrap="wrap" flexDirection="row" alignItems="flex-start">
-			<Box marginRight={1}>
-				<Color gray> {timestamp} </Color>
+		<Log color={status} prefix={status} timestamp={timestamp}>
+			<Box
+				textWrap="truncate-middle"
+				flexDirection="column"
+				justifyContent="flex-start"
+			>
+				{text}
 			</Box>
-			<Box marginRight={1}>
-				<TextLabel />
-			</Box>
-			<Box flexDirection="column" justifyContent="flex-start">
-				{Array.isArray(text) ? text.join('\n') : text}
-			</Box>
-		</Box>
+		</Log>
 	);
 };
 

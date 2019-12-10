@@ -17,6 +17,13 @@ function Job(text, parent) {
 		start: () => {
 			actions.beginJob(id);
 		},
+		update: payload => {
+			if (typeof payload === 'string') {
+				actions.updateJob({id, text: `${text} ==> ${payload}`});
+			} else {
+				actions.updateJob(payload);
+			}
+		},
 		finish: () => {
 			actions.completeJob(id);
 		},

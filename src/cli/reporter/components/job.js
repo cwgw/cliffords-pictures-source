@@ -1,21 +1,12 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import {Box, Color} from 'ink';
 import Spinner from 'ink-spinner';
 import _isNil from 'lodash/isNil';
 
-/**
+import Log from './log';
 
-<filename> <job> [<step>/<total>] <task text>: [<step>/<total>] <childTask text>
-
-<startTime> <filename> <job>
-<startTime>   [<step>/<total>] <duration>s <task text>
-<startTime>   [<step>/<total>] <duration>s <task text>
-<startTime>     [<step>/<total>] <duration>s <childTask text>
-<startTime>     [<step>/<total>] <duration>s <childTask text>
-
-*/
-
-const formatDuration = duration => {
+function formatDuration(duration) {
 	if (_isNil(duration)) {
 		return '';
 	}
@@ -23,41 +14,43 @@ const formatDuration = duration => {
 	let [int, dec] = duration.toString().split('.');
 	dec = dec || '0';
 	return `${int.padStart(2, '0')}.${dec.padEnd(2, '0')}s`;
-};
+}
 
-const CompletedJobFragment = ({
+const Complete = ({
 	timestamp,
 	duration,
-	index,
-	total,
+	status,
 	text,
 	jobs,
-	depth = 0,
+	indent = '',
+	isChild = false,
+	isLast = false,
 }) => {
-	const step = !_isNil(index) && !_isNil(total) ? `[${index}/${total}]` : null;
+	const isParent = jobs && jobs.length > 0;
+	const pipe = isChild ? (
+		<Color gray>
+			{indent}
+			{isLast ? '└' : '├'}─{isParent ? '┬' : '─'}
+		</Color>
+	) : (
+		<Color gray>╤</Color>
+	);
+	const elapsedTime = <Color gray>{formatDuration(duration)}</Color>;
+	const success =
+		status === 'complete' ? <Color green>✔</Color> : <Color yellow>✘</Color>;
+
 	return (
 		<>
-			<Box>
-				<Box marginRight={depth * 3 + 1}>
-					<Color gray bgKeyword={depth ? null : 'white'}>
-						{` ${timestamp} `}
-					</Color>{' '}
-					{formatDuration(duration)}
-				</Box>
-				{step && (
-					<Box marginRight={1}>
-						<Color gray>{step}</Color>
-					</Box>
-				)}
-				{text}
-			</Box>
+			<Log timestamp={timestamp} color={isChild ? undefined : 'whiteBright'}>
+				{pipe} {success} {elapsedTime} {text}
+			</Log>
 			{jobs &&
-				jobs.map(({id, ...job}, i) => (
-					<CompletedJobFragment
+				jobs.map(({id, ...job}, i, arr) => (
+					<Complete
 						key={id}
-						depth={depth + 1}
-						index={i + 1}
-						total={jobs.length}
+						isChild
+						indent={isChild ? indent + (isLast ? '  ' : '│ ') : ''}
+						isLast={i + 1 === arr.length}
 						{...job}
 					/>
 				))}
@@ -65,24 +58,15 @@ const CompletedJobFragment = ({
 	);
 };
 
-const Job = job => {
-	if (job.status === 'complete') {
-		return (
-			<Box flexDirection="column">
-				<CompletedJobFragment {...job} />
-			</Box>
-		);
-	}
-
+const Pending = ({text}) => {
 	return (
-		<Box>
-			<Box marginRight={1}>
-				<Spinner type="dots" />
-			</Box>
-			<Box marginRight={1}>{job.name}</Box>
-			<Box textWrap="truncate-start">{job.text}</Box>
-		</Box>
+		<Log timestamp={new Date().toLocaleTimeString('en-US')}>
+			<Spinner type="dots" /> <Box textWrap="truncate-start">{text}</Box>
+		</Log>
 	);
 };
 
-export default Job;
+export default {
+	Complete,
+	Pending,
+};

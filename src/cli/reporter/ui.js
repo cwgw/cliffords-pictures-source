@@ -11,7 +11,11 @@ import Job from './components/job';
 const renderLog = ({type, ...log}) => {
 	switch (type) {
 		case 'job':
-			return <Job key={type + log.status + log.id} {...log} />;
+			if (log.status === 'complete') {
+				return <Job.Complete key={type + log.status + log.id} {...log} />;
+			}
+
+			return <Job.Pending key={type + log.status + log.id} {...log} />;
 		case 'message':
 		default:
 			return <Message key={type + log.status + log.id} {...log} />;
