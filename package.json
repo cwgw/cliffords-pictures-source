@@ -79,6 +79,9 @@
 	"xo": {
 		"extends": "xo-react",
 		"prettier": true,
-		"ignores": "site"
+		"ignores": "site",
+		"rules": {
+			"react/state-in-constructor": ["error", "always"]
+		}
 	}
 }
