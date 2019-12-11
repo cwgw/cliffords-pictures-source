@@ -49,13 +49,9 @@ const reducer = (state, action) => {
 				...state,
 				logs: {
 					...state.logs,
-					active: state.logs.active.map(o => {
-						if (o.id === id) {
-							return {...o, ...payload};
-						}
-
-						return o;
-					}),
+					active: state.logs.active.map(o =>
+						o.id === id ? _.merge({}, o, payload) : o
+					),
 				},
 			};
 		}
@@ -92,10 +88,7 @@ const reducer = (state, action) => {
 				...state,
 				jobs: {
 					...state.jobs,
-					[id]: {
-						...job,
-						...payload,
-					},
+					[id]: _.merge({}, job, payload),
 				},
 			};
 		}
@@ -137,11 +130,10 @@ const actions = {
 			dispatch({
 				type: UPDATE_ACTIVE_LOG,
 				payload: denormalizeJob(
-					{
-						...job,
+					_.merge({}, job, {
 						...payload,
 						timestamp: new Date().toLocaleTimeString('en-US'),
-					},
+					}),
 					getState
 				),
 			});

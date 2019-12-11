@@ -35,7 +35,7 @@ module.exports = async (file, {parentJob, dest, cache}) => {
 		const id = file.name;
 		const cachedData = cache.get(['photos', id]).value();
 		if (cachedData) {
-			job.update('using cached data');
+			job.note('using cached data', 'info');
 			await savePhotoMeta(cachedData, {dir: dest.web, parentJob: job}, true);
 			return;
 		}
@@ -128,15 +128,14 @@ async function getFaces(imagePipeline, {id, aspectRatio, parentJob}) {
 		}
 	} while (faces.length < 1 && ++i < 4);
 
+	let msg = 'found none';
 	if (faces.length > 0) {
-		job.update(
-			`found ${faces.length}, with ${
-				rotate > 0 ? rotate + 'deg' : 'no'
-			} rotation`
-		);
-	} else {
-		job.update('found none');
+		msg = `found ${faces.length}, with ${
+			rotate > 0 ? rotate + 'deg' : 'no'
+		} rotation`;
 	}
+
+	job.note(msg, 'gray');
 
 	faces = faces.map(
 		({faceId, faceRectangle: r, faceAttributes: attributes}) => {
@@ -177,8 +176,10 @@ function createFaceID({imageId, center: {x, y}}) {
 }
 
 async function savePhotoMeta(data, {dir, parentJob}, force = false) {
+	const job = parentJob.add(`save data file`);
 	const filePath = path.resolve(dir, data.id, `data.json`);
-	const job = parentJob.add(`save data file ${path.relative('./', filePath)}`);
+	job.note(path.relative('./', filePath));
+
 	if (fs.existsSync(filePath) && !force) {
 		reporter.warning(
 			`Cannot save metadata file`,

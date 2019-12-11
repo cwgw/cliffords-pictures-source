@@ -1,12 +1,13 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Box, Color} from 'ink';
+import {Box} from 'ink';
 import Spinner from 'ink-spinner';
 import _isNil from 'lodash/isNil';
 import _partition from 'lodash/partition';
 
 import Log from './log';
 import ProgressBar from './progress';
+import Color from './color';
 
 function formatDuration(duration) {
 	if (_isNil(duration)) {
@@ -24,6 +25,7 @@ const Complete = ({
 	isChild,
 	isLast,
 	jobs,
+	notes,
 	status,
 	text,
 	timestamp,
@@ -41,10 +43,22 @@ const Complete = ({
 	const success =
 		status === 'complete' ? <Color green>✔</Color> : <Color yellow>✘</Color>;
 
+	let suffix = null;
+	if (notes && notes.length > 0) {
+		suffix = notes.map(([text, color = 'gray']) => (
+			<React.Fragment key={text + color}>
+				<Box marginRight={1}>
+					<Color color="gray">──</Color>
+				</Box>
+				<Color color={color}>{text}</Color>
+			</React.Fragment>
+		));
+	}
+
 	return (
 		<>
 			<Log timestamp={timestamp} color={isChild ? undefined : 'whiteBright'}>
-				{pipe} {success} {elapsedTime} {text}
+				{pipe} {success} {elapsedTime} {text} {suffix}
 			</Log>
 			{jobs &&
 				jobs.map(({id, ...job}, i, arr) => (
@@ -66,6 +80,7 @@ Complete.propTypes = {
 	isChild: PropTypes.bool,
 	isLast: PropTypes.bool,
 	jobs: PropTypes.array.isRequired,
+	notes:PropTypes.array,
 	status: PropTypes.string.isRequired,
 	text: PropTypes.string.isRequired,
 	timestamp: PropTypes.string.isRequired,
@@ -75,6 +90,7 @@ Complete.defaultProps = {
 	indent: '',
 	isChild: false,
 	isLast: false,
+	notes: [],
 };
 
 const Pending = ({timestamp, text, allJobs}) => {

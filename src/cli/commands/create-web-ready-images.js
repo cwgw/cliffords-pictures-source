@@ -59,15 +59,9 @@ module.exports = async (
 
 	await Promise.all(pendingImageTasks);
 
-	const note = [
-		['sizes', imageSizes],
-		['formats', imageFormats],
-		['total', imageVariants.length],
-	]
-		.map(([key, val]) => `${key}: ${val}`)
-		.join(', ');
-
-	job.update(note);
+	job.note(
+		`${imageVariants.length} files saved to ${path.relative('./', outputDir)}`
+	);
 	job.finish();
 };
 
