@@ -3,7 +3,7 @@
 const yargs = require('yargs');
 
 const config = require('../config');
-const cache = require('./cache')(config);
+const getCache = require('./cache');
 const reporter = require('./reporter');
 const run = require('./commands');
 
@@ -16,19 +16,22 @@ const {_: input, ...argv} = cli
 		alias: 't',
 		type: 'boolean',
 	})
-	.option('createMetadata', {
+	.option('no-cache', {
+		type: 'boolean',
+	})
+	.option('create-metadata', {
 		alias: 'm',
 		type: 'boolean',
 	})
-	.option('createImages', {
+	.option('create-images', {
 		alias: 'i',
 		type: 'boolean',
 	})
-	.option('parseScans', {
+	.option('parse-scans', {
 		alias: 's',
 		type: 'boolean',
 	})
-	.option('initialRotation', {
+	.option('initial-rotation', {
 		alias: 'r',
 		type: 'number',
 		nargs: 1,
@@ -41,6 +44,10 @@ const {_: input, ...argv} = cli
 	.fail((msg, err) => {
 		reporter.error(msg, err);
 	})
+	.parserConfiguration({'boolean-negation': false})
 	.parse(process.argv.filter(a => !(a === __dirname || a.endsWith('node'))));
 
-run(input, {...config, ...argv, cache});
+const options = {...config, ...argv};
+options.cache = getCache(options);
+
+run(input, options);
