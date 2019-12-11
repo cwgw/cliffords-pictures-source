@@ -88,5 +88,16 @@
 			]
 		},
 		"space": true
+	},
+	"config": {
+		"withBase64": true,
+		"imageFormats": ["jpg", "webp"],
+		"imageSizes": [192, 384, 768, 1536],
+		"cacheDir": ".cache",
+		"dest": {
+			"web": "site/content",
+			"srcPhoto": "src/photos",
+			"srcScan": "src/scans"
+		}
 	}
 }

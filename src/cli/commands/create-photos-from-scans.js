@@ -58,7 +58,7 @@ module.exports = async (
       });
       refineContours.finish();
       const id = await pHash(finalImage, {parentJob: childJob});
-      const filePath = path.resolve(dest.src, `${id}.png`);
+      const filePath = path.resolve(dest.srcPhoto, `${id}.png`);
       await cvSaveImage(filePath, finalImage, {parentJob: childJob});
       childJob.finish();
     } catch (error) {

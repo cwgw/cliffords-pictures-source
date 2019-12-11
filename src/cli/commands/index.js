@@ -18,37 +18,10 @@ const parseScans = require('./create-photos-from-scans');
 
 const queue = new PQueue({concurrency: 8});
 
-module.exports = async (input, options) => {
+module.exports = async ({files, ...options}) => {
   const nothingToDo = () => {
     reporter.exit(`There's nothing to do. Exiting process early...`);
   };
-
-  const files = input.reduce((acc, i) => {
-    let inputFiles = glob.sync(i);
-    if (inputFiles.length === 0) {
-      inputFiles = [i];
-    }
-
-    return acc.concat(
-      inputFiles.map(filePath => ({
-        filePath,
-        ...path.parse(filePath)
-      }))
-    );
-  }, []);
-
-  if (files.length === 0) {
-    reporter.warn('no files enqueued');
-    nothingToDo();
-  }
-
-  if (options.testRun) {
-    for (const d in options.dest) {
-      if (Object.prototype.hasOwnProperty.call(options.dest, d)) {
-        options.dest[d] = path.join('./test', options.dest[d]);
-      }
-    }
-  }
 
   if (options.parseScans) {
     fs.ensureDirSync(path.resolve(options.dest.src));
