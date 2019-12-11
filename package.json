@@ -38,6 +38,7 @@
 		"react-dom": "^16.12.0",
 		"react-redux": "^7.1.3",
 		"redux": "^4.0.4",
+		"redux-thunk": "^2.3.0",
 		"sharp": "^0.23.4",
 		"uuid": "^3.3.3",
 		"yargs": "^15.0.2"
@@ -57,10 +58,10 @@
 		"regenerator-runtime": "^0.13.3",
 		"xo": "^0.25.3"
 	},
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/cwgw/cliffords-pictures"
-  },
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/cwgw/cliffords-pictures"
+	},
 	"babel": {
 		"presets": [
 			"@babel/preset-react",
@@ -81,7 +82,10 @@
 		"prettier": true,
 		"ignores": "site",
 		"rules": {
-			"react/state-in-constructor": ["error", "always"]
+			"react/state-in-constructor": [
+				"error",
+				"always"
+			]
 		}
 	}
 }

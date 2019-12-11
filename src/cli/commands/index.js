@@ -57,6 +57,7 @@ module.exports = async (input, options) => {
 				const parentJob = reporter.addJob(
 					`${i} of ${arr.length}: ${file.name}`
 				);
+				parentJob.start();
 				await parseScans(file, {
 					...options,
 					parentJob,

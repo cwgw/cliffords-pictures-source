@@ -1,10 +1,12 @@
 const uuid = require('uuid/v4');
 const _ = require('lodash');
 const convertHrtime = require('convert-hrtime');
-const {createStore, bindActionCreators} = require('redux');
+const {createStore, bindActionCreators, applyMiddleware} = require('redux');
+const thunk = require('redux-thunk').default;
 
 const ADD_ACTIVE_LOG = 'ADD_ACTIVE_LOG';
 const REMOVE_ACTIVE_LOG = 'REMOVE_ACTIVE_LOG';
+const UPDATE_ACTIVE_LOG = 'UPDATE_ACTIVE_LOG';
 const ADD_STATIC_LOG = 'ADD_STATIC_LOG';
 const ADD_JOB = 'ADD_JOB';
 const UPDATE_JOB = 'UPDATE_JOB';
@@ -37,6 +39,23 @@ const reducer = (state, action) => {
 				logs: {
 					...state.logs,
 					active: state.logs.active.filter(o => o.id !== id),
+				},
+			};
+		}
+
+		case UPDATE_ACTIVE_LOG: {
+			const {id, ...payload} = action.payload;
+			return {
+				...state,
+				logs: {
+					...state.logs,
+					active: state.logs.active.map(o => {
+						if (o.id === id) {
+							return {...o, ...payload};
+						}
+
+						return o;
+					}),
 				},
 			};
 		}
@@ -86,7 +105,7 @@ const reducer = (state, action) => {
 	}
 };
 
-const store = createStore(reducer, initialState);
+const store = createStore(reducer, initialState, applyMiddleware(thunk));
 
 function dispatch(action) {
 	if (!action) {
@@ -102,6 +121,32 @@ function dispatch(action) {
 }
 
 const actions = {
+	addActiveLog: id => {
+		const job = getJob(id);
+		return {
+			type: ADD_ACTIVE_LOG,
+			payload: {
+				type: 'job',
+				...denormalizeJob(job),
+			},
+		};
+	},
+	updateActiveLog: ({id, ...payload}) => {
+		return (dispatch, getState) => {
+			const job = getJob(id, getState);
+			dispatch({
+				type: UPDATE_ACTIVE_LOG,
+				payload: denormalizeJob(
+					{
+						...job,
+						...payload,
+						timestamp: new Date().toLocaleTimeString('en-US'),
+					},
+					getState
+				),
+			});
+		};
+	},
 	removeActiveLog: id => {
 		if (!getActiveLog(id)) {
 			return null;
@@ -136,27 +181,25 @@ const actions = {
 			...payload,
 		});
 	},
-	createJob: ({id, text, parent = null}) => {
+	createJob: ({id, text, parent = null, root = null}) => {
 		if (!id) {
 			id = uuid();
 		}
 
-		const actionsToEmit = [
-			{
-				type: ADD_JOB,
-				payload: {
-					id,
-					type: 'job',
-					startTime: process.hrtime(),
-					timestamp: new Date().toLocaleTimeString('en-US'),
-					text,
-					parent,
-					status: 'started',
-					jobs: [],
-					completed: [],
-				},
-			},
-		];
+		const payload = {
+			id,
+			type: 'job',
+			startTime: process.hrtime(),
+			timestamp: new Date().toLocaleTimeString('en-US'),
+			text,
+			parent,
+			root,
+			status: 'started',
+			jobs: [],
+			completed: [],
+		};
+
+		const actionsToEmit = [{type: ADD_JOB, payload}];
 
 		if (parent) {
 			const {jobs} = getJob(parent);
@@ -168,31 +211,42 @@ const actions = {
 			);
 		}
 
+		if (root) {
+			const {allJobs} = getJob(root);
+			actionsToEmit.push(
+				actions.updateJob({
+					id: root,
+					allJobs: [...(allJobs || []), id],
+				})
+			);
+		}
+
 		return actionsToEmit;
 	},
 	updateJob: ({id, ...payload}) => {
-		if (!getJob(id)) {
+		const job = getJob(id);
+
+		if (!job) {
 			return actions.createMessage({
 				status: 'warning',
 				text: `Attempting to update a job that doesn't exist`,
 			});
 		}
 
-		return {
-			type: UPDATE_JOB,
-			payload: {id, ...payload},
-		};
-	},
-	beginJob: id => {
-		const job = getJob(id);
-		return {
-			type: ADD_ACTIVE_LOG,
-			payload: {
-				type: 'job',
-				...job,
+		const actionsToEmit = [
+			{
+				type: UPDATE_JOB,
+				payload: {id, ...payload},
 			},
-		};
+		];
+
+		if (getActiveLog(id)) {
+			actionsToEmit.push(actions.updateActiveLog({id}));
+		}
+
+		return actionsToEmit;
 	},
+	beginJob: id => actions.addActiveLog(id),
 	completeJob: id => {
 		const job = getJob(id);
 
@@ -214,57 +268,46 @@ const actions = {
 		}
 
 		return [
-			{
-				type: REMOVE_ACTIVE_LOG,
-				payload: {id},
-			},
+			actions.removeActiveLog(id),
 			actions.addStaticLog(denormalizeJob(payload)),
 		];
 	},
 };
 
-function getJob(id) {
-	if (!id) {
-		return;
-	}
-
-	return store.getState().jobs[id];
+function getJob(id, getState = store.getState) {
+	return id && getState().jobs[id];
 }
 
-function getActiveLog(id) {
-	if (!id) {
-		return;
-	}
-
-	return _.find(store.getState().logs.active, o => o.id === id);
+function getActiveLog(id, getState = store.getState) {
+	return id && _.find(getState().logs.active, o => o.id === id);
 }
 
-function getStaticLog(id) {
-	if (!id) {
-		return;
-	}
-
-	return _.find(store.getState().logs.static, o => o.id === id);
+function getStaticLog(id, getState = store.getState) {
+	return id && _.find(getState().logs.static, o => o.id === id);
 }
 
-function denormalizeJob(job) {
+function denormalizeJob(job, getState = store.getState) {
 	if (typeof job === 'string') {
-		job = getJob(job);
+		job = getJob(job, getState);
 	}
 
-	if (_.isEmpty(job.jobs)) {
-		return {
-			...job,
-			jobs: [],
-		};
+	if (!job) {
+		return {};
 	}
 
-	return {
-		...job,
-		jobs: job.jobs.reduce((arr, jobId) => {
-			return [...arr, denormalizeJob(jobId)];
-		}, []),
-	};
+	const clone = {...job};
+	const keys = ['jobs', 'allJobs'];
+
+	for (const key of keys) {
+		clone[key] = [];
+		if (!_.isNil(job[key]) && !_.isEmpty(job[key])) {
+			clone[key] = job[key].reduce((arr, o) => {
+				return [...arr, denormalizeJob(o)];
+			}, []);
+		}
+	}
+
+	return clone;
 }
 
 function getElapsedTime({startTime}) {

@@ -8,12 +8,12 @@ require('./ui');
 const message = status => (...args) =>
 	actions.createMessage({text: args, status});
 
-function Job(text, parent) {
+function Job(text, parent, root) {
 	const id = uuid();
-	actions.createJob({id, text, parent});
+	actions.createJob({id, text, parent, root});
 
 	return {
-		add: text => new Job(text, id),
+		add: text => new Job(text, id, root || id),
 		start: () => {
 			actions.beginJob(id);
 		},

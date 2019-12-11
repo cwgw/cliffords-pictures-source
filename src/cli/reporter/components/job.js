@@ -3,8 +3,10 @@ import PropTypes from 'prop-types';
 import {Box, Color} from 'ink';
 import Spinner from 'ink-spinner';
 import _isNil from 'lodash/isNil';
+import _partition from 'lodash/partition';
 
 import Log from './log';
+import ProgressBar from './progress';
 
 function formatDuration(duration) {
 	if (_isNil(duration)) {
@@ -75,16 +77,42 @@ Complete.defaultProps = {
 	isLast: false,
 };
 
-const Pending = ({text}) => {
+const Pending = ({timestamp, text, allJobs}) => {
+	let progress = null;
+	if (allJobs.length > 0) {
+		const [complete, pending] = _partition(
+			allJobs,
+			o => o.status === 'complete'
+		);
+		const message = pending.length > 0 ? pending[pending.length - 1].text : '';
+		progress = (
+			<ProgressBar
+				current={complete.length}
+				total={allJobs.length}
+				message={message}
+			/>
+		);
+	}
+
 	return (
-		<Log timestamp={new Date().toLocaleTimeString('en-US')}>
-			<Spinner type="dots" /> <Box textWrap="truncate-start">{text}</Box>
+		<Log timestamp={timestamp}>
+			<Box marginRight={1}>
+				<Spinner type="dots" />
+			</Box>
+			<Box marginRight={1}>{text}</Box>
+			{progress}
 		</Log>
 	);
 };
 
 Pending.propTypes = {
+	allJobs: PropTypes.array,
 	text: PropTypes.string.isRequired,
+	timestamp: PropTypes.string.isRequired,
+};
+
+Pending.defaultProps = {
+	allJobs: [],
 };
 
 export default {

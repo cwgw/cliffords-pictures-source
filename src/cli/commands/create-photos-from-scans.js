@@ -5,19 +5,24 @@ const sharp = require('sharp');
 
 const reporter = require('../reporter');
 
-module.exports = async ({file, options, parentJob}) => {
+module.exports = async (
+	file,
+	{parentJob, initialRotation, resolution, dest}
+) => {
+	const job = parentJob.add('find contours');
+
 	// Load image
 	let image;
 
 	try {
-		image = await cvReadImage(file.filePath, {reporter});
+		image = await cvReadImage(file.filePath, {parentJob: job});
 	} catch {
 		reporter.panic(`Couldn't read file with opencv`, file);
 	}
 
 	// Find photos
-	if (options.initialRotation > 0) {
-		image.rotate(options.initialRotation);
+	if (initialRotation > 0) {
+		image.rotate(initialRotation);
 	}
 
 	// Drop alpha channel if it exists
@@ -27,14 +32,11 @@ module.exports = async ({file, options, parentJob}) => {
 		image.merge(channels.slice(0, 3));
 	}
 
-	const isRightSized = getPolaroidSizeTest(options.resolution);
-
-	const job = parentJob.add('find contours');
+	const filter = getPolaroidSizeTest(resolution);
 
 	let contourData = [];
 	try {
-		// Find contours
-		contourData = await getContours(image, isRightSized);
+		contourData = await getContours(image, {filter});
 	} catch (error) {
 		reporter.panic(`Couldn't get contour data`, error);
 	}
@@ -48,25 +50,16 @@ module.exports = async ({file, options, parentJob}) => {
 		try {
 			const childJob = job.add(`image ${i}`);
 			const refineContours = childJob.add('refine contours');
-			const croppedImage = await rotateAndCrop({image, inset: -30, ...data});
-			const secondPassData = await getContours(croppedImage, isRightSized);
-			const finalImage = await rotateAndCrop({
-				image: croppedImage,
+			const croppedImage = await rotateAndCrop(image, {inset: -30, ...data});
+			const secondPassData = await getContours(croppedImage, {filter});
+			const finalImage = await rotateAndCrop(croppedImage, {
 				inset: 10,
 				...secondPassData[0],
 			});
 			refineContours.finish();
-
-			const hashJob = childJob.add('create perceptual hash');
-			const id = await pHash(finalImage, reporter);
-			hashJob.finish();
-
-			const filePath = path.resolve(options.dest.src, `${id}.png`);
-			const saveJob = childJob.add(
-				`save photo ${path.relative('./', filePath)}`
-			);
-			finalImage.save(filePath);
-			saveJob.finish();
+			const id = await pHash(finalImage, {parentJob: childJob});
+			const filePath = path.resolve(dest.src, `${id}.png`);
+			await cvSaveImage(filePath, finalImage, {parentJob: childJob});
 			childJob.finish();
 		} catch (error) {
 			reporter.error(`Couldn't process image`, error);
@@ -77,8 +70,9 @@ module.exports = async ({file, options, parentJob}) => {
 	job.finish();
 };
 
-function cvReadImage(filePath, {reporter}) {
-	return new Promise((resolve, reject) => {
+async function cvReadImage(filePath, {parentJob}) {
+	const job = parentJob.add('read image');
+	const image = await new Promise((resolve, reject) => {
 		cv.readImage(filePath, (err, image) => {
 			if (err) {
 				reporter.panic(`failed to readImage.`, err);
@@ -88,6 +82,14 @@ function cvReadImage(filePath, {reporter}) {
 			}
 		});
 	});
+	job.finish();
+	return image;
+}
+
+async function cvSaveImage(filePath, image, {parentJob}) {
+	const job = parentJob.add(`save photo ${path.relative('./', filePath)}`);
+	await image.save(filePath);
+	job.finish();
 }
 
 // Given image resolution (dpi) this returns a function to test if
@@ -129,119 +131,113 @@ function getPolaroidSizeTest(resolution) {
 	};
 }
 
-function getContours(image, filter = () => true) {
+async function getContours(image, {filter}) {
 	const scale = 0.5;
-	return new Promise(resolve => {
-		const img = image.copy();
-		const [h, w] = img.size();
+	const img = image.copy();
+	const [h, w] = img.size();
 
-		// Scale down for faster operations
-		img.resize(w * scale, h * scale);
+	// Scale down for faster operations
+	img.resize(w * scale, h * scale);
 
-		// Split channels
-		const channels = img.split();
+	// Split channels
+	const channels = img.split();
 
-		// Save blue channel
-		const blueChannel = channels[0];
+	// Save blue channel
+	const blueChannel = channels[0];
 
-		// Discard alpha channel if it exists
-		if (img.channels() > 3) {
-			img.merge(channels.slice(0, 3));
+	// Discard alpha channel if it exists
+	if (img.channels() > 3) {
+		img.merge(channels.slice(0, 3));
+	}
+
+	// Grayscale
+	img.convertGrayscale();
+
+	// Create mask from inverted blue channel
+	const blackMat = new cv.Matrix.Zeros(h * scale, w * scale);
+	blueChannel.bitwiseNot(blackMat);
+	const blueInverted = img.add(blackMat);
+	const mask = blueInverted.threshold(180, 255);
+
+	// Add mask to original
+	img.bitwiseAnd(img, mask);
+
+	// Blur, erode, and threshold
+	img.gaussianBlur([7, 7]);
+	img.erode(2);
+	img.bilateralFilter(30, 30, 100);
+	const imgThreshold = img.threshold(70, 255);
+
+	const contours = imgThreshold.findContours();
+	const contourRectData = new Map([]);
+
+	for (let i = 0; i < contours.size(); i++) {
+		const rect = contours.minAreaRect(i);
+		const bounds = contours.boundingRect(i);
+
+		let {width} = rect.size;
+		let {height} = rect.size;
+		let {angle} = rect;
+
+		if (angle <= -45) {
+			angle += 90;
+			width = rect.size.height;
+			height = rect.size.width;
 		}
 
-		// Grayscale
-		img.convertGrayscale();
+		const data = {
+			angle,
+			width: Math.round(width / scale),
+			height: Math.round(height / scale),
+			center: {
+				x: Math.round((bounds.x + bounds.width / 2) / scale),
+				y: Math.round((bounds.y + bounds.height / 2) / scale),
+			},
+			area: (width * height) / scale ** 2,
+		};
 
-		// Create mask from inverted blue channel
-		const blackMat = new cv.Matrix.Zeros(h * scale, w * scale);
-		blueChannel.bitwiseNot(blackMat);
-		const blueInverted = img.add(blackMat);
-		const mask = blueInverted.threshold(180, 255);
-
-		// Add mask to original
-		img.bitwiseAnd(img, mask);
-
-		// Blur, erode, and threshold
-		img.gaussianBlur([7, 7]);
-		img.erode(2);
-		img.bilateralFilter(30, 30, 100);
-		const imgThreshold = img.threshold(70, 255);
-
-		const contours = imgThreshold.findContours();
-		const contourRectData = new Map([]);
-
-		for (let i = 0; i < contours.size(); i++) {
-			const rect = contours.minAreaRect(i);
-			const bounds = contours.boundingRect(i);
-
-			let {width} = rect.size;
-			let {height} = rect.size;
-			let {angle} = rect;
-
-			if (angle <= -45) {
-				angle += 90;
-				width = rect.size.height;
-				height = rect.size.width;
-			}
-
-			const data = {
-				angle,
-				width: Math.round(width / scale),
-				height: Math.round(height / scale),
-				center: {
-					x: Math.round((bounds.x + bounds.width / 2) / scale),
-					y: Math.round((bounds.y + bounds.height / 2) / scale),
-				},
-				area: (width * height) / scale ** 2,
-			};
-
-			// Remove any rects that fail the polaroid size test
-			if (!filter(data)) {
-				continue;
-			}
-
-			// Sometimes we end up with contours that are nearly identical,
-			// so we use a Map to quickly check for duplicates
-			const keyX = Math.floor(data.center.x / 100) * 100;
-			const keyY = Math.floor(data.center.y / 100) * 100;
-			const key = `_${keyX}${keyY}`;
-
-			if (contourRectData.has(key)) {
-				continue;
-			}
-
-			contourRectData.set(key, data);
+		// Remove any rects that fail the polaroid size test
+		if (!filter(data)) {
+			continue;
 		}
 
-		resolve([...contourRectData.values()]);
-	});
+		// Sometimes we end up with contours that are nearly identical,
+		// so we use a Map to quickly check for duplicates
+		const keyX = Math.floor(data.center.x / 100) * 100;
+		const keyY = Math.floor(data.center.y / 100) * 100;
+		const key = `_${keyX}${keyY}`;
+
+		if (contourRectData.has(key)) {
+			continue;
+		}
+
+		contourRectData.set(key, data);
+	}
+
+	return [...contourRectData.values()];
 }
 
-function rotateAndCrop({
+async function rotateAndCrop(
 	image,
-	angle,
-	center: {x, y},
-	width,
-	height,
-	inset = 0,
-}) {
-	return new Promise(resolve => {
-		const img = image.copy();
-		img.rotate(angle, x, y);
-		const left = Math.round(x - width / 2);
-		const top = Math.round(y - height / 2);
-		const croppedImage = img.crop(
-			left + inset,
-			top + inset,
-			width - inset * 2,
-			height - inset * 2
-		);
-		resolve(croppedImage);
-	});
+	{angle, center: {x, y}, width, height, inset = 0}
+) {
+	const img = image.copy();
+	img.rotate(angle, x, y);
+	const left = Math.round(x - width / 2);
+	const top = Math.round(y - height / 2);
+	const croppedImage = img.crop(
+		left + inset,
+		top + inset,
+		width - inset * 2,
+		height - inset * 2
+	);
+	return croppedImage;
 }
 
-async function pHash(image, reporter) {
+async function pHash(image, {parentJob}) {
 	try {
+		const job = parentJob.add('create perceptual hash');
+
 		if (!(image instanceof sharp)) {
 			image = sharp(image.copy().toBuffer());
 		}
@@ -262,6 +258,7 @@ async function pHash(image, reporter) {
 			}
 		}
 
+		job.finish();
 		return new Decimal(hash).toHexadecimal();
 	} catch (error) {
 		reporter.error(`Couldn't create perceptual hash`, error);
