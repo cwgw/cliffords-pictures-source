@@ -60,7 +60,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/cwgw/cliffords-pictures"
+		"url": "https://github.com/cwgw/cliffords-pictures-source"
 	},
 	"babel": {
 		"presets": [
