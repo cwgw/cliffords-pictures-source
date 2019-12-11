@@ -19,98 +19,98 @@ const parseScans = require('./create-photos-from-scans');
 const queue = new PQueue({concurrency: 8});
 
 module.exports = async (input, options) => {
-	const nothingToDo = () => {
-		reporter.exit(`There's nothing to do. Exiting process early...`);
-	};
+  const nothingToDo = () => {
+    reporter.exit(`There's nothing to do. Exiting process early...`);
+  };
 
-	const files = input.reduce((acc, i) => {
-		let inputFiles = glob.sync(i);
-		if (inputFiles.length === 0) {
-			inputFiles = [i];
-		}
+  const files = input.reduce((acc, i) => {
+    let inputFiles = glob.sync(i);
+    if (inputFiles.length === 0) {
+      inputFiles = [i];
+    }
 
-		return acc.concat(
-			inputFiles.map(filePath => ({
-				filePath,
-				...path.parse(filePath),
-			}))
-		);
-	}, []);
+    return acc.concat(
+      inputFiles.map(filePath => ({
+        filePath,
+        ...path.parse(filePath)
+      }))
+    );
+  }, []);
 
-	if (files.length === 0) {
-		reporter.warn('no files enqueued');
-		nothingToDo();
-	}
+  if (files.length === 0) {
+    reporter.warn('no files enqueued');
+    nothingToDo();
+  }
 
-	if (options.testRun) {
-		for (const d in options.dest) {
-			if (Object.prototype.hasOwnProperty.call(options.dest, d)) {
-				options.dest[d] = path.join('./test', options.dest[d]);
-			}
-		}
-	}
+  if (options.testRun) {
+    for (const d in options.dest) {
+      if (Object.prototype.hasOwnProperty.call(options.dest, d)) {
+        options.dest[d] = path.join('./test', options.dest[d]);
+      }
+    }
+  }
 
-	if (options.parseScans) {
-		fs.ensureDirSync(path.resolve(options.dest.src));
-		queue.addAll(
-			files.map((file, i, arr) => async () => {
-				const parentJob = reporter.addJob(
-					`${i} of ${arr.length}: ${file.name}`
-				);
-				parentJob.start();
-				await parseScans(file, {
-					...options,
-					parentJob,
-				});
-				parentJob.finish();
-			})
-		);
+  if (options.parseScans) {
+    fs.ensureDirSync(path.resolve(options.dest.src));
+    queue.addAll(
+      files.map((file, i, arr) => async () => {
+        const parentJob = reporter.addJob(
+          `${i} of ${arr.length}: ${file.name}`
+        );
+        parentJob.start();
+        await parseScans(file, {
+          ...options,
+          parentJob
+        });
+        parentJob.finish();
+      })
+    );
 
-		try {
-			await queue.onIdle();
-			reporter.success('Done');
-		} catch (error) {
-			reporter.error(error);
-		}
+    try {
+      await queue.onIdle();
+      reporter.success('Done');
+    } catch (error) {
+      reporter.error(error);
+    }
 
-		return;
-	}
+    return;
+  }
 
-	const tasks = [];
+  const tasks = [];
 
-	if (options.createMetadata) {
-		tasks.push(createMetadata);
-	}
+  if (options.createMetadata) {
+    tasks.push(createMetadata);
+  }
 
-	if (options.createImages) {
-		tasks.push(createImages);
-	}
+  if (options.createImages) {
+    tasks.push(createImages);
+  }
 
-	if (tasks.length === 0) {
-		reporter.warn('no tasks specified');
-		nothingToDo();
-	}
+  if (tasks.length === 0) {
+    reporter.warn('no tasks specified');
+    nothingToDo();
+  }
 
-	reporter.info(`Processing ${files.length} files`);
+  reporter.info(`Processing ${files.length} files`);
 
-	const pendingTasks = files.map((file, i, arr) => async () => {
-		const parentJob = reporter.addJob(
-			`${i + 1} of ${arr.length}: ${file.name}`
-		);
-		parentJob.start();
-		for (const task of tasks) {
-			await task(file, {...options, parentJob});
-		}
+  const pendingTasks = files.map((file, i, arr) => async () => {
+    const parentJob = reporter.addJob(
+      `${i + 1} of ${arr.length}: ${file.name}`
+    );
+    parentJob.start();
+    for (const task of tasks) {
+      await task(file, {...options, parentJob});
+    }
 
-		parentJob.finish();
-	});
+    parentJob.finish();
+  });
 
-	queue.addAll(pendingTasks);
+  queue.addAll(pendingTasks);
 
-	try {
-		await queue.onIdle();
-		reporter.success('Done');
-	} catch (error) {
-		reporter.error(error);
-	}
+  try {
+    await queue.onIdle();
+    reporter.success('Done');
+  } catch (error) {
+    reporter.error(error);
+  }
 };

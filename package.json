@@ -79,13 +79,14 @@
 	},
 	"xo": {
 		"extends": "xo-react",
-		"prettier": true,
 		"ignores": "site",
+		"prettier": true,
 		"rules": {
 			"react/state-in-constructor": [
 				"error",
 				"always"
 			]
-		}
+		},
+		"space": true
 	}
 }

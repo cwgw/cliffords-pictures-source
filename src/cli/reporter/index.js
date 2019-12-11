@@ -6,39 +6,39 @@ const {actions} = require('./state');
 require('./ui');
 
 const message = status => (...args) =>
-	actions.createMessage({text: args, status});
+  actions.createMessage({text: args, status});
 
 function Job(text, parent, root) {
-	const id = uuid();
-	actions.createJob({id, text, parent, root});
+  const id = uuid();
+  actions.createJob({id, text, parent, root});
 
-	return {
-		add: text => new Job(text, id, root || id),
-		start: () => {
-			actions.beginJob(id);
-		},
-		note: (text, status) => {
-			actions.updateJob({id, notes: [[text, status]]});
-		},
-		finish: () => {
-			actions.completeJob(id);
-		},
-	};
+  return {
+    add: text => new Job(text, id, root || id),
+    start: () => {
+      actions.beginJob(id);
+    },
+    note: (text, status) => {
+      actions.updateJob({id, notes: [[text, status]]});
+    },
+    finish: () => {
+      actions.completeJob(id);
+    }
+  };
 }
 
 module.exports = {
-	log: message('log'),
-	info: message('info'),
-	success: message('success'),
-	warning: message('warning'),
-	error: message('error'),
-	panic: (...args) => {
-		message('error')(...args);
-		process.exit(1);
-	},
-	exit: (...args) => {
-		message('info')(...args);
-		process.exit();
-	},
-	addJob: text => new Job(text),
+  log: message('log'),
+  info: message('info'),
+  success: message('success'),
+  warning: message('warning'),
+  error: message('error'),
+  panic: (...args) => {
+    message('error')(...args);
+    process.exit(1);
+  },
+  exit: (...args) => {
+    message('info')(...args);
+    process.exit();
+  },
+  addJob: text => new Job(text)
 };
