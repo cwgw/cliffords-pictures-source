@@ -10,27 +10,28 @@ import Job from './components/job';
 
 const Logs = ({logs}) => {
   return (
-    <Box flexDirection="column" width="100%">
-      <Static>
-        {logs.static.map(log => {
-          switch (log.type) {
-            case 'job':
-              return <Job.Complete key={log.id} {...log} />;
-            case 'message':
-            default:
-              return <Message key={log.id} {...log} />;
-          }
-        })}
-      </Static>
+    <>
+      <Box flexDirection="column" width="100%" marginBottom={1}>
+        <Static>
+          {logs.static.map(log => {
+            switch (log.type) {
+              case 'job':
+                return <Job.Complete key={log.id} {...log} />;
+              case 'message':
+              default:
+                return <Message key={log.id} {...log} />;
+            }
+          })}
+        </Static>
+      </Box>
       {logs.active.length > 0 ? (
-        <>
-          {`\n`}
+        <Box flexDirection="column" width="100%">
           {logs.active.map(log => (
             <Job.Pending key={log.id} {...log} />
           ))}
-        </>
+        </Box>
       ) : null}
-    </Box>
+    </>
   );
 };
 
@@ -65,7 +66,7 @@ class Ui extends React.Component {
           <Message
             timestamp={new Date().toLocaleTimeString('en-US')}
             status="error"
-            text={[`Logger encountered an error`, error]}
+            text={[`Logger encountered an error`, error.message]}
           />
         </Box>
       );

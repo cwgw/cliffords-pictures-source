@@ -33,6 +33,7 @@
 		"lowdb": "^1.0.0",
 		"opencv": "^6.2.0",
 		"p-queue": "^6.2.1",
+		"pretty-error": "^2.1.1",
 		"prop-types": "^15.7.2",
 		"react": "^16.12.0",
 		"react-dom": "^16.12.0",
@@ -90,14 +91,22 @@
 		"space": true
 	},
 	"config": {
-		"withBase64": true,
-		"imageFormats": ["jpg", "webp"],
-		"imageSizes": [192, 384, 768, 1536],
 		"cacheDir": ".cache",
 		"dest": {
 			"web": "site/content",
 			"srcPhoto": "src/photos",
 			"srcScan": "src/scans"
-		}
+		},
+		"imageFormats": [
+			"jpg",
+			"webp"
+		],
+		"imageSizes": [
+			192,
+			384,
+			768,
+			1536
+		],
+		"withBase64": true
 	}
 }

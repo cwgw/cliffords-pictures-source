@@ -5,6 +5,7 @@ import {Box} from 'ink';
 import Log from './log';
 
 const Message = ({text, timestamp, status}) => {
+  const content = Array.isArray(text) ? text : [text];
   return (
     <Log color={status} prefix={status} timestamp={timestamp}>
       <Box
@@ -12,7 +13,7 @@ const Message = ({text, timestamp, status}) => {
         flexDirection="column"
         justifyContent="flex-start"
       >
-        {text}
+        {content.map((msg, i) => <Box key={msg+i}>{msg}</Box>)}
       </Box>
     </Log>
   );

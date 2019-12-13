@@ -30,17 +30,20 @@ const rateLimiter = new Bottleneck({
 });
 
 module.exports = async (file, {parentJob, dest, cache}) => {
-  const job = parentJob.add('create metadata');
+  const job = parentJob
+    ? parentJob.add('create metadata')
+    : reporter.addJob('create metadata');
+
   try {
-    const id = file.name;
+    const id = path.parse(file).name;
     const cachedData = cache.get(['photos', id]).value();
     if (cachedData) {
-      job.note('using cached data', 'info');
+      job.note('using cached data', 'success');
       await savePhotoMeta(cachedData, {dir: dest.web, parentJob: job}, true);
       return;
     }
 
-    const imagePipeline = await sharp(file.filePath);
+    const imagePipeline = await sharp(file);
     const aspectRatio = await getAspectRatio(imagePipeline);
     const {faces, transform} = await getFaces(imagePipeline, {
       id,

@@ -37,7 +37,7 @@ const Complete = ({
       {isLast ? '└' : '├'}─{isParent ? '┬' : '─'}
     </Color>
   ) : (
-    <Color gray>╤</Color>
+    <Color gray>{isParent ? '╤' : '═'}</Color>
   );
   const elapsedTime = <Color gray>{formatDuration(duration)}</Color>;
   const success =

@@ -1,8 +1,11 @@
 /* eslint-disable import/no-unassigned-import */
 /* eslint-disable unicorn/no-process-exit */
 
+const util = require('util');
 const uuid = require('uuid/v4');
+const PrettyError = require('pretty-error');
 const {actions} = require('./state');
+
 require('./ui');
 
 const message = status => (...args) =>
@@ -16,6 +19,7 @@ function Job(text, parent, root) {
     add: text => new Job(text, id, root || id),
     start: () => {
       actions.beginJob(id);
+      return this;
     },
     note: (text, status) => {
       actions.updateJob({id, notes: [[text, status]]});
@@ -26,14 +30,38 @@ function Job(text, parent, root) {
   };
 }
 
+const prettyError = new PrettyError();
+
+const formatError = error => {
+  if (Array.isArray(error)) {
+    return error.map(e => formatError(e));
+  }
+
+  if (
+    util.types.isNativeError(error) ||
+    error instanceof Error ||
+    (error && error.message && error.stack)
+  ) {
+    return prettyError.render(error);
+  }
+
+  if (typeof error === 'object') {
+    return error.toString()
+  }
+
+  return error;
+};
+
 module.exports = {
   log: message('log'),
   info: message('info'),
   success: message('success'),
   warning: message('warning'),
-  error: message('error'),
+  error: (...args) => {
+    message('error')(...formatError(args));
+  },
   panic: (...args) => {
-    message('error')(...args);
+    message('error')(...formatError(args));
     process.exit(1);
   },
   exit: (...args) => {

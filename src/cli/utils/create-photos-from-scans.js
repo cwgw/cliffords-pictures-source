@@ -1,99 +1,135 @@
 const path = require('path');
+const fs = require('fs-extra');
 const cv = require('opencv');
-const Decimal = require('decimal.js');
-const sharp = require('sharp');
 
 const reporter = require('../reporter');
+const pHash = require('./perceptual-hash');
 
 module.exports = async (
   file,
-  {parentJob, initialRotation, resolution, dest}
+  {parentJob, initialRotation, resolution, cache, dest}
 ) => {
-  const job = parentJob.add('find contours');
+  const job = parentJob
+    ? parentJob.add('search scan')
+    : reporter.addJob('search scan');
 
-  // Load image
-  let image;
+  let photos;
 
   try {
-    image = await cvReadImage(file.filePath, {parentJob: job});
-  } catch {
-    reporter.panic(`Couldn't read file with opencv`, file);
-  }
+    const image = await cvReadImage(file);
 
-  // Find photos
-  if (initialRotation > 0) {
-    image.rotate(initialRotation);
-  }
-
-  // Drop alpha channel if it exists
-  // some opencv methods expect exactly 3 channels
-  if (image.channels() > 3) {
-    const channels = image.split();
-    image.merge(channels.slice(0, 3));
-  }
-
-  const filter = getPolaroidSizeTest(resolution);
-
-  let contourData = [];
-  try {
-    contourData = await getContours(image, {filter});
-  } catch (error) {
-    reporter.panic(`Couldn't get contour data`, error);
-  }
-
-  if (contourData.length < 4) {
-    reporter.warn(`found fewer than 4 contours in file ${file.name}`);
-  }
-
-  // Process each	image
-  const pendingImages = contourData.map(async (data, i) => {
-    try {
-      const childJob = job.add(`image ${i}`);
-      const refineContours = childJob.add('refine contours');
-      const croppedImage = await rotateAndCrop(image, {inset: -30, ...data});
-      const secondPassData = await getContours(croppedImage, {filter});
-      const finalImage = await rotateAndCrop(croppedImage, {
-        inset: 10,
-        ...secondPassData[0]
-      });
-      refineContours.finish();
-      const id = await pHash(finalImage, {parentJob: childJob});
-      const filePath = path.resolve(dest.srcPhoto, `${id}.png`);
-      await cvSaveImage(filePath, finalImage, {parentJob: childJob});
-      childJob.finish();
-    } catch (error) {
-      reporter.error(`Couldn't process image`, error);
+    let id = path.parse(file).name;
+    if (!id.startsWith('0x')) {
+      id = await pHash(image);
     }
-  });
 
-  await Promise.all(pendingImages);
-  job.finish();
+    const cachedData = cache.get(['scans', id]).value();
+    if (cachedData) {
+      let returnEarly = true;
+      for (const photo of cachedData.photos) {
+        if (!fs.existsSync(photo)) {
+          returnEarly = false;
+          break;
+        }
+      }
+      if (returnEarly) {
+        job.note('using cached data', 'success');
+        photos = cachedData.photos;
+        return;
+      }
+    }
+
+    if (initialRotation > 0) {
+      image.rotate(initialRotation);
+    }
+
+    // Drop alpha channel if it exists
+    // some opencv methods expect exactly 3 channels
+    if (image.channels() > 3) {
+      const channels = image.split();
+      image.merge(channels.slice(0, 3));
+    }
+
+    const filter = getPolaroidSizeTest(resolution);
+    const contourData = await getContours(image, {filter});
+
+    if (contourData.length < 4) {
+      reporter.warn(`Found fewer than 4 photos in scan:`, file);
+    }
+
+    job.note(`found ${contourData.length} photos`);
+
+    // Process each	image
+    photos = await Promise.all(
+      contourData.map(async (data, i) => {
+        const childJob = job.add(`image ${i + 1}`);
+        let filePath;
+        try {
+          const refineContours = childJob.add('refine contours');
+          const croppedImage = await rotateAndCrop(image, {inset: -30, ...data});
+          const secondPassData = await getContours(croppedImage, {filter});
+          const finalImage = await rotateAndCrop(croppedImage, {
+            inset: 10,
+            ...secondPassData[0]
+          });
+          refineContours.finish();
+          const photoId = await pHash(finalImage);
+          childJob.note(photoId);
+          filePath = path.resolve(dest.srcPhoto, `${photoId}.png`);
+          await cvSaveImage(filePath, finalImage, {parentJob: childJob});
+        } catch (error) {
+          reporter.error(`Couldn't process image`, error);
+        } finally {
+          childJob.finish();
+          return filePath;
+        }
+      })
+    );
+    cache.set(['scans', id], {photos}).write();
+  } catch (error) {
+    reporter.panic(error);
+  } finally {
+    job.finish();
+    return photos;
+  }
 };
 
-async function cvReadImage(filePath, {parentJob}) {
-  const job = parentJob.add('read image');
-  const image = await new Promise((resolve, reject) => {
-    cv.readImage(filePath, (err, image) => {
-      if (err) {
-        reporter.panic('failed to readImage.', err);
-        reject(err);
-      } else {
-        resolve(image);
-      }
+async function cvReadImage(filePath, {parentJob} = {}) {
+  const job = parentJob && parentJob.add('read image');
+  let image;
+  try {
+    image = await new Promise((resolve, reject) => {
+      cv.readImage(filePath, (err, image) => {
+        if (err) {
+          reporter.panic('failed to readImage.', err);
+          reject(err);
+        } else {
+          resolve(image);
+        }
+      });
     });
-  });
-  job.finish();
-  return image;
+    image;
+  } catch (error) {
+    reporter.panic(error);
+  } finally {
+    if (job) job.finish();
+    return image;
+  }
 }
 
-async function cvSaveImage(filePath, image, {parentJob}) {
-  const job = parentJob.add(`save photo ${path.relative('./', filePath)}`);
-  await image.save(filePath);
-  job.finish();
+async function cvSaveImage(filePath, image, {parentJob} = {}) {
+  const job = parentJob && parentJob.add(`save photo ${path.relative('./', filePath)}`);
+  try {
+    await image.save(filePath);
+  } catch (error) {
+    reporter.panic(error);
+  } finally {
+    if (job) job.finish();
+  }
 }
 
 // Given image resolution (dpi) this returns a function to test if
-// rects are shaped like polaroids
+// rects are polaroid-sized
 function getPolaroidSizeTest(resolution) {
   const polaroidSizes = [
     {
@@ -232,35 +268,4 @@ async function rotateAndCrop(
     height - inset * 2
   );
   return croppedImage;
-}
-
-async function pHash(image, {parentJob}) {
-  try {
-    const job = parentJob.add('create perceptual hash');
-
-    if (!(image instanceof sharp)) {
-      image = sharp(image.copy().toBuffer());
-    }
-
-    const buffer = await image
-      .greyscale()
-      .normalise()
-      .resize(9, 8, {fit: 'fill'})
-      .raw()
-      .toBuffer();
-
-    let hash = '0b';
-    for (let col = 0; col < 8; col++) {
-      for (let row = 0; row < 8; row++) {
-        const left = buffer[row * 8 + col];
-        const right = buffer[row * 8 + col + 1];
-        hash += left < right ? '1' : '0';
-      }
-    }
-
-    job.finish();
-    return new Decimal(hash).toHexadecimal();
-  } catch (error) {
-    reporter.error(`Couldn't create perceptual hash`, error);
-  }
 }

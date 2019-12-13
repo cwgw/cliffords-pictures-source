@@ -14,11 +14,14 @@ module.exports = async (
   file,
   {cache, parentJob, dest, imageSizes, imageFormats}
 ) => {
-  const job = parentJob.add('create web-ready images');
-  const id = file.name;
+  const job = parentJob
+    ? parentJob.add('create web-ready images')
+    : reporter.addJob('create web-ready images');
+  
+  const id = path.parse(file).name;
   const meta = cache.get(['photos', id]).value();
   const rotate = get(meta, 'transform.rotate', 0);
-  const imagePipeline = sharp(file.filePath).rotate(rotate);
+  const imagePipeline = sharp(file).rotate(rotate);
   const imageVariants = imageSizes.reduce(
     (arr, width) => arr.concat(imageFormats.map(format => ({format, width}))),
     []
@@ -26,7 +29,7 @@ module.exports = async (
 
   const outputDir = path.resolve(dest.web, id);
   fs.ensureDirSync(outputDir);
-
+  
   const pendingImageTasks = imageVariants.map(async ({width, format}) => {
     const outputPath = path.resolve(outputDir, `${width}.${format}`);
     try {

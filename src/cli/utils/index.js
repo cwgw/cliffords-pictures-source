@@ -8,7 +8,6 @@
 
 const path = require('path');
 const fs = require('fs-extra');
-const glob = require('glob');
 const PQueue = require('p-queue').default;
 
 const reporter = require('../reporter');
@@ -19,34 +18,31 @@ const parseScans = require('./create-photos-from-scans');
 const queue = new PQueue({concurrency: 8});
 
 module.exports = async ({files, ...options}) => {
-  const nothingToDo = () => {
+  if (files && files.length > 0) {
+    reporter.info(`Processing ${files.length} files`);
+  } else {
     reporter.exit(`There's nothing to do. Exiting process early...`);
-  };
+  }
 
   if (options.parseScans) {
-    fs.ensureDirSync(path.resolve(options.dest.src));
-    queue.addAll(
-      files.map((file, i, arr) => async () => {
-        const parentJob = reporter.addJob(
-          `${i} of ${arr.length}: ${file.name}`
-        );
-        parentJob.start();
-        await parseScans(file, {
-          ...options,
-          parentJob
-        });
-        parentJob.finish();
-      })
-    );
-
     try {
-      await queue.onIdle();
-      reporter.success('Done');
+      fs.ensureDirSync(path.resolve(options.dest.srcScan));
+      queue.addAll(
+        files.map((file, i, arr) => async () => {
+          const parentJob = reporter.addJob(
+            `${i} of ${arr.length}: ${file.name}`
+          );
+          parentJob.start();
+          await parseScans(file, {
+            ...options,
+            parentJob
+          });
+          parentJob.finish();
+        })
+      );
     } catch (error) {
       reporter.error(error);
     }
-
-    return;
   }
 
   const tasks = [];
@@ -59,26 +55,21 @@ module.exports = async ({files, ...options}) => {
     tasks.push(createImages);
   }
 
-  if (tasks.length === 0) {
-    reporter.warn('no tasks specified');
-    nothingToDo();
+  if (tasks.length > 0) {
+    const pendingTasks = files.map((file, i, arr) => async () => {
+      const parentJob = reporter.addJob(
+        `${i + 1} of ${arr.length}: ${file.name}`
+      );
+      parentJob.start();
+      for (const task of tasks) {
+        await task(file, {...options, parentJob});
+      }
+
+      parentJob.finish();
+    });
+
+    queue.addAll(pendingTasks);
   }
-
-  reporter.info(`Processing ${files.length} files`);
-
-  const pendingTasks = files.map((file, i, arr) => async () => {
-    const parentJob = reporter.addJob(
-      `${i + 1} of ${arr.length}: ${file.name}`
-    );
-    parentJob.start();
-    for (const task of tasks) {
-      await task(file, {...options, parentJob});
-    }
-
-    parentJob.finish();
-  });
-
-  queue.addAll(pendingTasks);
 
   try {
     await queue.onIdle();
