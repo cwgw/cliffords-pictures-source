@@ -17,7 +17,7 @@ module.exports = async (
   const job = parentJob
     ? parentJob.add('create web-ready images')
     : reporter.addJob('create web-ready images');
-  
+
   const id = path.parse(file).name;
   const meta = cache.get(['photos', id]).value();
   const rotate = get(meta, 'transform.rotate', 0);
@@ -29,7 +29,7 @@ module.exports = async (
 
   const outputDir = path.resolve(dest.web, id);
   fs.ensureDirSync(outputDir);
-  
+
   const pendingImageTasks = imageVariants.map(async ({width, format}) => {
     const outputPath = path.resolve(outputDir, `${width}.${format}`);
     try {

@@ -42,6 +42,7 @@ module.exports = async function(image, {parentJob} = {}) {
     if (job) {
       job.finish();
     }
+
     return new Decimal(hash).toHexadecimal();
   } catch (error) {
     reporter.panic(`Couldn't create perceptual hash`, error);

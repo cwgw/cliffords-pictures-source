@@ -32,6 +32,7 @@ module.exports = async (
           break;
         }
       }
+
       if (returnEarly) {
         job.note('using cached data', 'success');
         photos = cachedData.photos;
@@ -66,7 +67,10 @@ module.exports = async (
         let filePath;
         try {
           const refineContours = childJob.add('refine contours');
-          const croppedImage = await rotateAndCrop(image, {inset: -50, ...data});
+          const croppedImage = await rotateAndCrop(image, {
+            inset: -50,
+            ...data
+          });
           const secondPassData = await getContours(croppedImage, {filter});
           const finalImage = await rotateAndCrop(croppedImage, {
             inset: 10,
@@ -74,25 +78,23 @@ module.exports = async (
           });
           refineContours.finish();
           const photoId = await dHash(finalImage);
-          // const photoId = await dHash(croppedImage);
+          // Const photoId = await dHash(croppedImage);
           childJob.note(photoId);
           filePath = path.resolve(dest.srcPhoto, `${photoId}.png`);
           await cvSaveImage(filePath, finalImage, {parentJob: childJob});
-          // await cvSaveImage(filePath, croppedImage, {parentJob: childJob});
-        } catch (error) {
-          reporter.error(`Couldn't process image`, error);
-        } finally {
+          // Await cvSaveImage(filePath, croppedImage, {parentJob: childJob});
           childJob.finish();
           return filePath;
+        } catch (error) {
+          reporter.error(`Couldn't process image`, error);
         }
       })
     );
     cache.set(['scans', id], {photos}).write();
-  } catch (error) {
-    reporter.panic(error);
-  } finally {
     job.finish();
     return photos;
+  } catch (error) {
+    reporter.panic(error);
   }
 };
 
@@ -110,23 +112,21 @@ async function cvReadImage(filePath, {parentJob} = {}) {
         }
       });
     });
-    image;
-  } catch (error) {
-    reporter.panic(error);
-  } finally {
     if (job) job.finish();
     return image;
+  } catch (error) {
+    reporter.panic(error);
   }
 }
 
 async function cvSaveImage(filePath, image, {parentJob} = {}) {
-  const job = parentJob && parentJob.add(`save photo ${path.relative('./', filePath)}`);
+  const job =
+    parentJob && parentJob.add(`save photo ${path.relative('./', filePath)}`);
   try {
     await image.save(filePath);
+    if (job) job.finish();
   } catch (error) {
     reporter.panic(error);
-  } finally {
-    if (job) job.finish();
   }
 }
 
@@ -195,7 +195,7 @@ async function getContours(image, {filter}) {
   const blackMat = new cv.Matrix.Zeros(h * scale, w * scale);
   blueChannel.bitwiseNot(blackMat);
   const blueInverted = img.add(blackMat);
-  // const mask = blueInverted.threshold(180, 255);
+  // Const mask = blueInverted.threshold(180, 255);
   const mask = blueInverted.threshold(200, 255);
 
   // Add mask to original
@@ -265,7 +265,7 @@ async function rotateAndCrop(
 ) {
   const img = image.copy();
   img.rotate(angle, x, y);
-  const [imgH, imgW] = img.size()
+  const [imgH, imgW] = img.size();
   const left = Math.max(0, Math.round(x - width / 2) + inset);
   const top = Math.max(0, Math.round(y - height / 2) + inset);
   const w = Math.min(imgW - left, width - inset * 2);

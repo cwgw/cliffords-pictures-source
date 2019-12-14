@@ -18,43 +18,44 @@ process.on('unhandledRejection', (reason, promise) => {
 
 const middleware = argv => {
   // Collect files
-  argv.files = argv._
-    .reduce((acc, i) => {
-      let files = glob.sync(i);
-      if (files.length === 0) {
-        files = [i];
-      }
+  argv.files = argv._.reduce((acc, i) => {
+    let files = glob.sync(i);
+    if (files.length === 0) {
+      files = [i];
+    }
 
-      return acc.concat(files
-        .map(file => {
-          const filePath = path.resolve(file);
+    return acc.concat(
+      files.map(file => {
+        const filePath = path.resolve(file);
 
-          if (!fs.existsSync(filePath)) {
+        if (!fs.existsSync(filePath)) {
+          return false;
+        }
+
+        if (fs.lstatSync(filePath).isFile()) {
+          const ext = path
+            .parse(filePath)
+            .ext.split('.')
+            .pop();
+          if (!['jpg', 'jpeg', 'png', 'tif', 'tiff', 'webp'].includes(ext)) {
             return false;
           }
+        }
 
-          if (fs.lstatSync(filePath).isFile()) {
-            let ext = path.parse(filePath).ext.split('.').pop();
-            if (!['jpg','jpeg','png','tif','tiff','webp'].includes(ext)) {
-              return false;
-            }
-          }
-
-          return filePath;
-        })
-      )
-    }, [])
-    .filter(o => o);
+        return filePath;
+      })
+    );
+  }, []).filter(o => o);
 
   // Modify destination if testRun
   for (const dest in argv.dest) {
-    if (
-      argv.testRun &&
-      Object.prototype.hasOwnProperty.call(argv.dest, dest)
-    ) {
-      argv.dest[dest] = path.join('./test', argv.dest[dest]);
+    if (Object.prototype.hasOwnProperty.call(argv.dest, dest)) {
+      if (argv.testRun) {
+        argv.dest[dest] = path.join('./test', argv.dest[dest]);
+      }
+
+      fs.ensureDirSync(argv.dest[dest]);
     }
-    fs.ensureDirSync(argv.dest[dest]);
   }
 
   // Init cache
@@ -93,32 +94,32 @@ yargs()
     'test-run': {
       alias: 't',
       type: 'boolean',
-      global: true,
+      global: true
     },
     'no-cache': {
       type: 'boolean',
-      global: true,
+      global: true
     },
     'initial-rotation': {
       alias: 'r',
       type: 'number',
       nargs: 1,
       default: 0,
-      global: true,
+      global: true
     },
-    'resolution': {
+    resolution: {
       type: 'number',
       default: 600,
-      global: true,
+      global: true
     },
-    'mode': {
+    mode: {
       alias: 'm',
       type: 'string',
-      choices: ['all','only-scans','only-photos','only-meta','only-images'],
+      choices: ['all', 'only-scans', 'only-photos', 'only-meta', 'only-images'],
       default: 'all',
       global: 'true',
       nargs: 1
-    },
+    }
   })
   .wrap(yargs.terminalWidth())
   .fail((msg, err) => {

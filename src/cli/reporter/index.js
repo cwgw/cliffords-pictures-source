@@ -46,7 +46,7 @@ const formatError = error => {
   }
 
   if (typeof error === 'object') {
-    return error.toString()
+    return error.toString();
   }
 
   return error;

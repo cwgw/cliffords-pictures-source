@@ -13,7 +13,9 @@ const Message = ({text, timestamp, status}) => {
         flexDirection="column"
         justifyContent="flex-start"
       >
-        {content.map((msg, i) => <Box key={msg+i}>{msg}</Box>)}
+        {content.map((msg, i) => (
+          <Box key={msg + i}>{msg}</Box>
+        ))}
       </Box>
     </Log>
   );
