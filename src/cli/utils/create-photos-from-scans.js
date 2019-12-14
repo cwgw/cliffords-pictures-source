@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs-extra');
 const cv = require('opencv');
+const _ = require('lodash');
 
 const reporter = require('../reporter');
 const dHash = require('./d-hash');
@@ -18,9 +19,18 @@ module.exports = async (
   try {
     const image = await cvReadImage(file);
 
+    if (initialRotation > 0) {
+      image.rotate(initialRotation);
+    }
+    
     let id = path.parse(file).name;
     if (!id.startsWith('0x')) {
       id = await dHash(image);
+    }
+
+    const imagePath = path.join(dest.srcScan, `${id}.png`);
+    if (!fs.existsSync(imagePath)) {
+      await cvSaveImage(imagePath, image);
     }
 
     const cachedData = cache.get(['scans', id]).value();
@@ -35,13 +45,8 @@ module.exports = async (
 
       if (returnEarly) {
         job.note('using cached data', 'success');
-        photos = cachedData.photos;
-        return;
+        return cachedData.photos;
       }
-    }
-
-    if (initialRotation > 0) {
-      image.rotate(initialRotation);
     }
 
     // Drop alpha channel if it exists
@@ -80,7 +85,7 @@ module.exports = async (
           const photoId = await dHash(finalImage);
           // Const photoId = await dHash(croppedImage);
           childJob.note(photoId);
-          filePath = path.resolve(dest.srcPhoto, `${photoId}.png`);
+          filePath = path.join(dest.srcPhoto, `${photoId}.png`);
           await cvSaveImage(filePath, finalImage, {parentJob: childJob});
           // Await cvSaveImage(filePath, croppedImage, {parentJob: childJob});
           childJob.finish();
@@ -120,6 +125,10 @@ async function cvReadImage(filePath, {parentJob} = {}) {
 }
 
 async function cvSaveImage(filePath, image, {parentJob} = {}) {
+  if (fs.existsSync(filePath)) {
+    reporter.warning(`Photo already exists.`, filePath)
+    filePath += _.snakeCase(new Date().toLocaleTimeString('en-US')) + '.png';
+  }
   const job =
     parentJob && parentJob.add(`save photo ${path.relative('./', filePath)}`);
   try {
