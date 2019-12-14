@@ -3,7 +3,7 @@ const fs = require('fs-extra');
 const cv = require('opencv');
 
 const reporter = require('../reporter');
-const pHash = require('./perceptual-hash');
+const dHash = require('./d-hash');
 
 module.exports = async (
   file,
@@ -20,7 +20,7 @@ module.exports = async (
 
     let id = path.parse(file).name;
     if (!id.startsWith('0x')) {
-      id = await pHash(image);
+      id = await dHash(image);
     }
 
     const cachedData = cache.get(['scans', id]).value();
@@ -66,14 +66,14 @@ module.exports = async (
         let filePath;
         try {
           const refineContours = childJob.add('refine contours');
-          const croppedImage = await rotateAndCrop(image, {inset: -30, ...data});
+          const croppedImage = await rotateAndCrop(image, {inset: 0, ...data});
           const secondPassData = await getContours(croppedImage, {filter});
           const finalImage = await rotateAndCrop(croppedImage, {
             inset: 10,
             ...secondPassData[0]
           });
           refineContours.finish();
-          const photoId = await pHash(finalImage);
+          const photoId = await dHash(finalImage);
           childJob.note(photoId);
           filePath = path.resolve(dest.srcPhoto, `${photoId}.png`);
           await cvSaveImage(filePath, finalImage, {parentJob: childJob});

@@ -103,7 +103,7 @@ yargs()
       alias: 'r',
       type: 'number',
       nargs: 1,
-      default: 180,
+      default: 0,
       global: true,
     },
     'resolution': {
