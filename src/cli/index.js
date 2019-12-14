@@ -26,7 +26,7 @@ const middleware = argv => {
 
     return acc.concat(
       files.map(file => {
-        const filePath = path.resolve(file);
+        const filePath = path.join(file);
 
         if (!fs.existsSync(filePath)) {
           return false;

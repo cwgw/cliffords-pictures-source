@@ -27,11 +27,11 @@ module.exports = async (
     []
   );
 
-  const outputDir = path.resolve(dest.web, id);
+  const outputDir = path.join(dest.web, id);
   fs.ensureDirSync(outputDir);
 
   const pendingImageTasks = imageVariants.map(async ({width, format}) => {
-    const outputPath = path.resolve(outputDir, `${width}.${format}`);
+    const outputPath = path.join(outputDir, `${width}.${format}`);
     try {
       const buffer = await imagePipeline
         .clone()

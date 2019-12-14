@@ -180,7 +180,7 @@ function createFaceID({imageId, center: {x, y}}) {
 
 async function savePhotoMeta(data, {dir, parentJob}, force = false) {
   const job = parentJob.add(`save data file`);
-  const filePath = path.resolve(dir, data.id, `data.json`);
+  const filePath = path.join(dir, data.id, `data.json`);
   job.note(path.relative('./', filePath));
 
   if (fs.existsSync(filePath) && !force) {
