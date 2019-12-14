@@ -17,6 +17,7 @@
 	"dependencies": {
 		"axios": "^0.19.0",
 		"bottleneck": "^2.19.5",
+		"chokidar": "^3.3.0",
 		"convert-hrtime": "^3.0.0",
 		"decimal.js": "^10.2.0",
 		"dotenv": "^8.2.0",
