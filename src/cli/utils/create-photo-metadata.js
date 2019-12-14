@@ -98,7 +98,7 @@ async function getBase64(imagePipeline, {transform, parentJob}) {
 async function getFaces(imagePipeline, {id, aspectRatio, parentJob}) {
   const job = parentJob.add('find faces');
 
-  let width = 1920;
+  let width = 2000;
   let height = Math.round(width / aspectRatio);
   let rotate;
   let faces = [];
