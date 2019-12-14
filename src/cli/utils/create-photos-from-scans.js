@@ -22,7 +22,7 @@ module.exports = async (
     if (initialRotation > 0) {
       image.rotate(initialRotation);
     }
-    
+
     let id = path.parse(file).name;
     if (!id.startsWith('0x')) {
       id = await dHash(image);
@@ -126,9 +126,10 @@ async function cvReadImage(filePath, {parentJob} = {}) {
 
 async function cvSaveImage(filePath, image, {parentJob} = {}) {
   if (fs.existsSync(filePath)) {
-    reporter.warning(`Photo already exists.`, filePath)
+    reporter.warning(`Photo already exists.`, filePath);
     filePath += _.snakeCase(new Date().toLocaleTimeString('en-US')) + '.png';
   }
+
   const job =
     parentJob && parentJob.add(`save photo ${path.relative('./', filePath)}`);
   try {
