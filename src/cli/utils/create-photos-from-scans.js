@@ -66,7 +66,7 @@ module.exports = async (
         let filePath;
         try {
           const refineContours = childJob.add('refine contours');
-          const croppedImage = await rotateAndCrop(image, {inset: 0, ...data});
+          const croppedImage = await rotateAndCrop(image, {inset: -50, ...data});
           const secondPassData = await getContours(croppedImage, {filter});
           const finalImage = await rotateAndCrop(croppedImage, {
             inset: 10,
@@ -74,9 +74,11 @@ module.exports = async (
           });
           refineContours.finish();
           const photoId = await dHash(finalImage);
+          // const photoId = await dHash(croppedImage);
           childJob.note(photoId);
           filePath = path.resolve(dest.srcPhoto, `${photoId}.png`);
           await cvSaveImage(filePath, finalImage, {parentJob: childJob});
+          // await cvSaveImage(filePath, croppedImage, {parentJob: childJob});
         } catch (error) {
           reporter.error(`Couldn't process image`, error);
         } finally {
@@ -193,14 +195,18 @@ async function getContours(image, {filter}) {
   const blackMat = new cv.Matrix.Zeros(h * scale, w * scale);
   blueChannel.bitwiseNot(blackMat);
   const blueInverted = img.add(blackMat);
-  const mask = blueInverted.threshold(180, 255);
+  // const mask = blueInverted.threshold(180, 255);
+  const mask = blueInverted.threshold(200, 255);
 
   // Add mask to original
   img.bitwiseAnd(img, mask);
 
   // Blur, erode, and threshold
-  img.gaussianBlur([7, 7]);
-  img.erode(2);
+  // img.gaussianBlur([7, 7]);
+  // img.erode(2);
+  img.gaussianBlur([3, 3]);
+  img.erode(4);
+
   img.bilateralFilter(30, 30, 100);
   const imgThreshold = img.threshold(70, 255);
 
@@ -259,13 +265,11 @@ async function rotateAndCrop(
 ) {
   const img = image.copy();
   img.rotate(angle, x, y);
-  const left = Math.round(x - width / 2);
-  const top = Math.round(y - height / 2);
-  const croppedImage = img.crop(
-    left + inset,
-    top + inset,
-    width - inset * 2,
-    height - inset * 2
-  );
+  const [imgH, imgW] = img.size()
+  const left = Math.max(0, Math.round(x - width / 2) + inset);
+  const top = Math.max(0, Math.round(y - height / 2) + inset);
+  const w = Math.min(imgW - left, width - inset * 2);
+  const h = Math.min(imgH - top, height - inset * 2);
+  const croppedImage = img.crop(left, top, w, h);
   return croppedImage;
 }

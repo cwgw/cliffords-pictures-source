@@ -10,7 +10,7 @@ exports.command = 'build'
 
 exports.desc = 'Build assets according to --mode'
 
-exports.handler = ({files, mode, ...options}) => {
+exports.handler = async ({files, mode, ...options}) => {
   const queue = new PQueue({concurrency: 8});
   const commandJob = reporter.addJob(
     `Process ${files.length} files [mode: '${mode}']`
