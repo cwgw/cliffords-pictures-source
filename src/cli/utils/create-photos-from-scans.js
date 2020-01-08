@@ -71,7 +71,6 @@ module.exports = async (
         const childJob = job.add(`image ${i + 1}`);
         let filePath;
         try {
-          const refineContours = childJob.add('refine contours');
           const croppedImage = await rotateAndCrop(image, {
             inset: -50,
             ...data
@@ -81,13 +80,11 @@ module.exports = async (
             inset: 10,
             ...secondPassData[0]
           });
-          refineContours.finish();
+
           const photoId = await dHash(finalImage);
-          // Const photoId = await dHash(croppedImage);
           childJob.note(photoId);
           filePath = path.join(dest.srcPhoto, `${photoId}.png`);
-          await cvSaveImage(filePath, finalImage, {parentJob: childJob});
-          // Await cvSaveImage(filePath, croppedImage, {parentJob: childJob});
+          await cvSaveImage(filePath, finalImage);
           childJob.finish();
           return filePath;
         } catch (error) {
@@ -248,7 +245,7 @@ async function getContours(image, {filter}) {
       area: (width * height) / scale ** 2
     };
 
-    // Remove any rects that fail the polaroid size test
+    // Skip any rects that fail the polaroid size test
     if (!filter(data)) {
       continue;
     }

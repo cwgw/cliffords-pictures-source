@@ -8,7 +8,6 @@ const imageminWebp = require('imagemin-webp');
 const sharp = require('sharp');
 
 const reporter = require('../reporter');
-// Const io = require('./io');
 
 module.exports = async (
   file,

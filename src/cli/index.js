@@ -62,30 +62,6 @@ const middleware = argv => {
   argv.cache = getCache(argv);
 };
 
-/**
-```
-# build photos from scans then metadata and images
-cli build <path/to/scans>
-
-# watch for scans then build photos, metadata and images
-cli watch <path/to/scans>
-
-# common command flags
-  # build photos from scans
-  --only-scans
-  # build metadata and images
-  --only-photos
-  # build metadata
-  --only-photo-meta
-  # build images
-  --only-photo-images
-
-```
-*/
-
-// const cli = yargs();
-
-// cli
 yargs()
   .scriptName('cliffs-pics-source')
   .usage('Usage: $0 <command> [options]')

@@ -13,13 +13,13 @@ exports.desc = 'Build assets when files are added to the provided directories';
 
 exports.handler = ({files, mode, ...options}) => {
   const queue = new PQueue({concurrency: 8});
-  const watching = reporter.addJob(`Watching '${files[0]}' [mode: '${mode}']`);
-  watching.start();
+  const watch = reporter.addJob(`Watching '${files[0]}' [mode: '${mode}']`);
+  watch.start();
 
-  let addFileHandler;
+  let newFileHandler;
 
   if (mode === 'all' || mode === 'only-scans') {
-    addFileHandler = scan => {
+    newFileHandler = scan => {
       if (!isValidImage(scan)) return;
       queue.add(async () => {
         const scanName = path.parse(scan).base;
@@ -46,7 +46,7 @@ exports.handler = ({files, mode, ...options}) => {
       });
     };
   } else {
-    addFileHandler = photo => {
+    newFileHandler = photo => {
       if (!isValidImage(photo)) return;
       queue.add(async () => {
         const photoName = path.parse(photo).base;
@@ -68,10 +68,10 @@ exports.handler = ({files, mode, ...options}) => {
 
   chokidar
     .watch(files.join(' '), {
-      ignored: /(^|[\/\\])\../,
+      ignored: /(^|[/\\])\../,
       ignoreInitial: true
     })
-    .on('add', addFileHandler);
+    .on('add', newFileHandler);
 };
 
 function isValidImage(file) {
@@ -79,6 +79,7 @@ function isValidImage(file) {
     .parse(file)
     .ext.split('.')
     .pop();
+
   if (['jpg', 'jpeg', 'png', 'tif', 'tiff', 'webp'].includes(ext)) {
     return true;
   }

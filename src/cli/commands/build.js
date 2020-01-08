@@ -12,7 +12,7 @@ exports.desc = 'Build assets according to --mode';
 
 exports.handler = async ({files, mode, ...options}) => {
   const queue = new PQueue({concurrency: 8});
-  const commandJob = reporter.addJob(
+  const build = reporter.addJob(
     `Process ${files.length} files [mode: '${mode}']`
   );
 
@@ -68,7 +68,7 @@ exports.handler = async ({files, mode, ...options}) => {
     }
 
     await queue.onIdle();
-    commandJob.finish();
+    build.finish();
   } catch (error) {
     reporter.panic(error);
   }

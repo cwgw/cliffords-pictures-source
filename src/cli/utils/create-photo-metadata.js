@@ -10,7 +10,6 @@ const fs = require('fs-extra');
 require('dotenv').config({path: `.env`});
 
 const reporter = require('../reporter');
-// Const io = require('./io');
 
 const faceApi = axios.create({
   baseURL: 'https://westus2.api.cognitive.microsoft.com/face/v1.0/detect',
