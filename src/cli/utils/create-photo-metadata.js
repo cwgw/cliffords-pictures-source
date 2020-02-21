@@ -25,7 +25,7 @@ const faceApi = axios.create({
 });
 
 const rateLimiter = new Bottleneck({
-  minTime: 3334 // 18 per minute
+  minTime: 3334 // ~18 per minute
 });
 
 module.exports = async (file, {parentJob, dest, cache}) => {

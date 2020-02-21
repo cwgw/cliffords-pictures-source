@@ -47,7 +47,7 @@ const middleware = argv => {
     );
   }, []).filter(o => o);
 
-  // Modify destination if testRun
+  // Modify output destination if --test-Run
   for (const dest in argv.dest) {
     if (Object.prototype.hasOwnProperty.call(argv.dest, dest)) {
       if (argv.testRun) {
