@@ -1,13 +1,10 @@
 const path = require('path');
 const fs = require('fs-extra');
 const get = require('lodash/get');
-const imagemin = require(`imagemin`);
-const imageminMozjpeg = require('imagemin-mozjpeg');
-const imageminPngquant = require('imagemin-pngquant');
-const imageminWebp = require('imagemin-webp');
 const sharp = require('sharp');
 
 const reporter = require('../reporter');
+const compress = require('./compress');
 
 module.exports = async (
   file,
@@ -66,22 +63,3 @@ module.exports = async (
   );
   job.finish();
 };
-
-async function compress(sharpBuffer, format) {
-  let plugins;
-  switch (format) {
-    case 'jpg':
-    case 'jpeg':
-      plugins = [imageminMozjpeg({quality: 90})];
-      break;
-    case 'webp':
-      plugins = [imageminWebp({quality: 90})];
-      break;
-    case 'png':
-    default:
-      plugins = [imageminPngquant({quality: 100})];
-      break;
-  }
-
-  return imagemin.buffer(sharpBuffer, {plugins});
-}
