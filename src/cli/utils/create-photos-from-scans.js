@@ -5,6 +5,7 @@ const _ = require('lodash');
 
 const reporter = require('../reporter');
 const dHash = require('./d-hash');
+const compress = require('./compress');
 
 module.exports = async (
   file,
@@ -30,7 +31,8 @@ module.exports = async (
 
     const imagePath = path.join(dest.srcScan, `${id}.png`);
     if (!fs.existsSync(imagePath)) {
-      await cvSaveImage(imagePath, image);
+      const compressedImage = await compress(image.copy().toBuffer());
+      fs.writeFile(imagePath, compressedImage);
     }
 
     const cachedData = cache.get(['scans', id]).value();
