@@ -43,10 +43,8 @@ module.exports = async (file, {parentJob, dest, cache}) => {
     }
 
     const imagePipeline = await sharp(file);
-    const aspectRatio = await getAspectRatio(imagePipeline);
-    const {faces, transform} = await getFaces(imagePipeline, {
+    const {faces, transform, aspectRatio} = await getFaces(imagePipeline, {
       id,
-      aspectRatio,
       parentJob: job
     });
     const base64 = await getBase64(imagePipeline, {transform, parentJob: job});
@@ -72,13 +70,6 @@ module.exports = async (file, {parentJob, dest, cache}) => {
   }
 };
 
-async function getAspectRatio(imagePipeline) {
-  const {width, height} = await imagePipeline
-    .metadata()
-    .catch(error => reporter.panic(error));
-  return width / height;
-}
-
 async function getBase64(imagePipeline, {transform, parentJob}) {
   const job = parentJob.add('create base64 string');
   const buffer = await imagePipeline
@@ -94,8 +85,16 @@ async function getBase64(imagePipeline, {transform, parentJob}) {
   return `data:image/png;base64,${buffer.toString(`base64`)}`;
 }
 
-async function getFaces(imagePipeline, {id, aspectRatio, parentJob}) {
+async function getFaces(imagePipeline, {id, parentJob}) {
   const job = parentJob.add('find faces');
+  let aspectRatio;
+
+  try {
+    const imageMetadata = await imagePipeline.metadata();
+    aspectRatio = imageMetadata.width / imageMetadata.height;
+  } catch (error) {
+    reporter.panic(error);
+  }
 
   let width = 2000;
   let height = Math.round(width / aspectRatio);
@@ -164,7 +163,8 @@ async function getFaces(imagePipeline, {id, aspectRatio, parentJob}) {
 
   return {
     faces,
-    transform: faces.length > 0 && rotate % 360 ? {rotate} : null
+    transform: faces.length > 0 && rotate % 360 ? {rotate} : null,
+    aspectRatio: rotate % 180 === 90 ? 1 / aspectRatio : aspectRatio
   };
 }
 
