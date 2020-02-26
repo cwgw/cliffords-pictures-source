@@ -183,7 +183,7 @@ async function savePhotoMeta(data, {dir, parentJob}, force = false) {
   job.note(path.relative('./', filePath));
 
   if (fs.existsSync(filePath) && !force) {
-    reporter.warning(
+    reporter.warn(
       `Cannot save metadata file`,
       `${path.relative('./', filePath)} already exists`,
       `To force overwrite, call with truthy second argument`

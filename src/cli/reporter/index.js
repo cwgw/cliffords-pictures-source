@@ -56,7 +56,7 @@ module.exports = {
   log: message('log'),
   info: message('info'),
   success: message('success'),
-  warning: message('warning'),
+  warn: message('warning'),
   error: (...args) => {
     message('error')(...formatError(args));
   },

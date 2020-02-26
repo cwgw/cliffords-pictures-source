@@ -125,7 +125,7 @@ async function cvReadImage(filePath, {parentJob} = {}) {
 
 async function cvSaveImage(filePath, image, {parentJob} = {}) {
   if (fs.existsSync(filePath)) {
-    reporter.warning(`Photo already exists.`, filePath);
+    reporter.warn(`Photo already exists.`, filePath);
     filePath += _.snakeCase(new Date().toLocaleTimeString('en-US')) + '.png';
   }
 
