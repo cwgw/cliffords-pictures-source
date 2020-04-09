@@ -16,7 +16,7 @@ process.on('unhandledRejection', (reason, promise) => {
   reporter.panic(promise, reason);
 });
 
-const middleware = argv => {
+const middleware = (argv) => {
   // Collect files
   argv.files = argv._.reduce((acc, i) => {
     let files = glob.sync(i);
@@ -25,7 +25,7 @@ const middleware = argv => {
     }
 
     return acc.concat(
-      files.map(file => {
+      files.map((file) => {
         const filePath = path.join(file);
 
         if (!fs.existsSync(filePath)) {
@@ -33,10 +33,7 @@ const middleware = argv => {
         }
 
         if (fs.lstatSync(filePath).isFile()) {
-          const ext = path
-            .parse(filePath)
-            .ext.split('.')
-            .pop();
+          const ext = path.parse(filePath).ext.split('.').pop();
           if (!['jpg', 'jpeg', 'png', 'tif', 'tiff', 'webp'].includes(ext)) {
             return false;
           }
@@ -45,7 +42,7 @@ const middleware = argv => {
         return filePath;
       })
     );
-  }, []).filter(o => o);
+  }, []).filter((o) => o);
 
   // Modify output destination if --test-Run
   for (const dest in argv.dest) {
@@ -98,10 +95,10 @@ yargs()
     }
   })
   .wrap(yargs.terminalWidth())
-  .fail((msg, err) => {
-    reporter.panic(msg, err);
+  .fail((message, err) => {
+    reporter.panic(message, err);
   })
   .parserConfiguration({'boolean-negation': false})
   .middleware(middleware)
   .commandDir('./commands')
-  .parse(process.argv.filter(a => !(a === __dirname || a.endsWith('node'))));
+  .parse(process.argv.filter((a) => !(a === __dirname || a.endsWith('node'))));

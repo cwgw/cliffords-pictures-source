@@ -10,7 +10,7 @@ const reporter = require('../reporter');
  * ...which is based on Neal Krawetz's dHash - https://www.hackerfactor.com/blog/index.php?/archives/529-Kind-of-Like-That.html
  */
 
-module.exports = async function(image, {parentJob} = {}) {
+module.exports = async function (image, {parentJob} = {}) {
   try {
     const job = parentJob && parentJob.add('create perceptual hash');
     let imageSharp;
@@ -45,6 +45,6 @@ module.exports = async function(image, {parentJob} = {}) {
 
     return new Decimal(hash).toHexadecimal();
   } catch (error) {
-    reporter.panic(`Couldn't create perceptual hash`, error);
+    reporter.panic(`Couldn’t create perceptual hash`, error);
   }
 };

@@ -2,13 +2,13 @@
 /* eslint-disable unicorn/no-process-exit */
 
 const util = require('util');
-const uuid = require('uuid/v4');
+const {v4: uuid} = require('uuid');
 const PrettyError = require('pretty-error');
 const {actions} = require('./state');
 
 require('./ui');
 
-const message = status => (...args) =>
+const message = (status) => (...args) =>
   actions.createMessage({text: args, status});
 
 function Job(text, parent, root) {
@@ -16,7 +16,7 @@ function Job(text, parent, root) {
   actions.createJob({id, text, parent, root});
 
   return {
-    add: text => new Job(text, id, root || id),
+    add: (text) => new Job(text, id, root || id),
     start: () => {
       actions.beginJob(id);
       return this;
@@ -32,9 +32,9 @@ function Job(text, parent, root) {
 
 const prettyError = new PrettyError();
 
-const formatError = error => {
+const formatError = (error) => {
   if (Array.isArray(error)) {
-    return error.map(e => formatError(e));
+    return error.map((error) => formatError(error));
   }
 
   if (
@@ -68,5 +68,5 @@ module.exports = {
     message('info')(...args);
     process.exit();
   },
-  addJob: text => new Job(text)
+  addJob: (text) => new Job(text)
 };

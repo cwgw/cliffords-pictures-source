@@ -61,12 +61,12 @@ const Complete = ({
         {pipe} {success} {elapsedTime} {text} {suffix}
       </Log>
       {jobs &&
-        jobs.map(({id, ...job}, i, arr) => (
+        jobs.map(({id, ...job}, i, array) => (
           <Complete
             key={id}
             isChild
             indent={isChild ? indent + (isLast ? '  ' : '│ ') : ''}
-            isLast={i + 1 === arr.length}
+            isLast={i + 1 === array.length}
             {...job}
           />
         ))}
@@ -98,7 +98,7 @@ const Pending = ({timestamp, text, allJobs}) => {
   if (allJobs.length > 0) {
     const [complete, pending] = _partition(
       allJobs,
-      o => o.status === 'complete'
+      (o) => o.status === 'complete'
     );
     const message = pending.length > 0 ? pending[pending.length - 1].text : '';
     progress = (

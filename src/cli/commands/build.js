@@ -13,16 +13,16 @@ exports.desc = 'Build assets according to --mode';
 exports.handler = async ({files, mode, ...options}) => {
   const queue = new PQueue({concurrency: 8});
   const build = reporter.addJob(
-    `Process ${files.length} files [mode: '${mode}']`
+    `Process ${files.length} files [mode: ’${mode}’]`
   );
 
   try {
     if (mode === 'all' || mode === 'only-scans') {
       queue.addAll(
-        files.map((scan, i, arr) => async () => {
+        files.map((scan, i, array) => async () => {
           const scanName = path.parse(scan).base;
           const parentJob = reporter.addJob(
-            `[${i + 1}/${arr.length}] process scan: ${scanName}`
+            `[${i + 1}/${array.length}] process scan: ${scanName}`
           );
           parentJob.start();
           const photos = await doScans(scan, {parentJob, ...options});
@@ -30,7 +30,7 @@ exports.handler = async ({files, mode, ...options}) => {
 
           if (mode === 'all') {
             queue.addAll(
-              photos.map(photo => async () => {
+              photos.map((photo) => async () => {
                 const photoName = path.parse(photo).base;
                 const job = reporter.addJob(
                   `process photo ${photoName} from ${scanName}`
@@ -47,10 +47,10 @@ exports.handler = async ({files, mode, ...options}) => {
       );
     } else {
       queue.addAll(
-        files.map((photo, i, arr) => async () => {
+        files.map((photo, i, array) => async () => {
           const photoName = path.parse(photo).base;
           const parentJob = reporter.addJob(
-            `[${i + 1}/${arr.length}] process photo: ${photoName}`
+            `[${i + 1}/${array.length}] process photo: ${photoName}`
           );
           parentJob.start();
 

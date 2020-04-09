@@ -13,13 +13,13 @@ exports.desc = 'Build assets when files are added to the provided directories';
 
 exports.handler = ({files, mode, ...options}) => {
   const queue = new PQueue({concurrency: 8});
-  const watch = reporter.addJob(`Watching '${files[0]}' [mode: '${mode}']`);
+  const watch = reporter.addJob(`Watching ’${files[0]}’ [mode: ’${mode}’]`);
   watch.start();
 
   let newFileHandler;
 
   if (mode === 'all' || mode === 'only-scans') {
-    newFileHandler = scan => {
+    newFileHandler = (scan) => {
       if (!isValidImage(scan)) return;
       queue.add(async () => {
         const scanName = path.parse(scan).base;
@@ -30,7 +30,7 @@ exports.handler = ({files, mode, ...options}) => {
 
         if (mode === 'all') {
           queue.addAll(
-            photos.map(photo => async () => {
+            photos.map((photo) => async () => {
               const photoName = path.parse(photo).base;
               const job = reporter.addJob(
                 `process photo ${photoName} from ${scanName}`
@@ -46,7 +46,7 @@ exports.handler = ({files, mode, ...options}) => {
       });
     };
   } else {
-    newFileHandler = photo => {
+    newFileHandler = (photo) => {
       if (!isValidImage(photo)) return;
       queue.add(async () => {
         const photoName = path.parse(photo).base;
@@ -75,10 +75,7 @@ exports.handler = ({files, mode, ...options}) => {
 };
 
 function isValidImage(file) {
-  const ext = path
-    .parse(file)
-    .ext.split('.')
-    .pop();
+  const ext = path.parse(file).ext.split('.').pop();
 
   if (['jpg', 'jpeg', 'png', 'tif', 'tiff', 'webp'].includes(ext)) {
     return true;

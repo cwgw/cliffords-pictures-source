@@ -13,7 +13,7 @@ const Logs = ({logs}) => {
     <>
       <Box flexDirection="column" width="100%" marginBottom={1}>
         <Static>
-          {logs.static.map(log => {
+          {logs.static.map((log) => {
             switch (log.type) {
               case 'job':
                 return <Job.Complete key={log.id} {...log} />;
@@ -26,7 +26,7 @@ const Logs = ({logs}) => {
       </Box>
       {logs.active.length > 0 ? (
         <Box flexDirection="column" width="100%">
-          {logs.active.map(log => (
+          {logs.active.map((log) => (
             <Job.Pending key={log.id} {...log} />
           ))}
         </Box>
@@ -42,7 +42,7 @@ Logs.propTypes = {
   }).isRequired
 };
 
-const ConnectedLogs = connect(state => ({logs: state.logs}))(Logs);
+const ConnectedLogs = connect((state) => ({logs: state.logs}))(Logs);
 
 class Ui extends React.Component {
   constructor(props) {

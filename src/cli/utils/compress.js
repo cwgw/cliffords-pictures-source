@@ -3,7 +3,7 @@ const imageminMozjpeg = require('imagemin-mozjpeg');
 const imageminPngquant = require('imagemin-pngquant');
 const imageminWebp = require('imagemin-webp');
 
-module.exports = async function(imageBuffer, format) {
+module.exports = async function (imageBuffer, format) {
   let plugins;
   switch (format) {
     case 'jpg':

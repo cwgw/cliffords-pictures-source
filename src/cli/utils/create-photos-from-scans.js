@@ -90,7 +90,7 @@ module.exports = async (
           childJob.finish();
           return filePath;
         } catch (error) {
-          reporter.error(`Couldn't process image`, error);
+          reporter.error(`Couldn’t process image`, error);
         }
       })
     );
@@ -167,7 +167,7 @@ function getPolaroidSizeTest(resolution) {
     );
   };
 
-  return datum => {
+  return (datum) => {
     for (const size of polaroidSizes) {
       if (isRightSized(datum, size)) {
         return true;

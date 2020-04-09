@@ -7,7 +7,7 @@ import {Box} from 'ink';
 const maxWidth = 30;
 const minWidth = 10;
 
-const getLength = prop => String(prop).length;
+const getLength = (prop) => String(prop).length;
 
 const ProgressBar = ({message, current, total}) => {
   const percentage = total ? Math.round((current / total) * 100) : 0;

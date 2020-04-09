@@ -79,7 +79,7 @@ async function getBase64(imagePipeline, {transform, parentJob}) {
     .blur(1.5)
     .png({force: true})
     .toBuffer()
-    .catch(error => reporter.panic(error));
+    .catch((error) => reporter.panic(error));
 
   job.finish();
   return `data:image/png;base64,${buffer.toString(`base64`)}`;
@@ -118,8 +118,8 @@ async function getFaces(imagePipeline, {id, parentJob}) {
         .toBuffer();
       faces = await rateLimiter.schedule(async () => {
         try {
-          const res = await faceApi.post('', stream);
-          return res.data;
+          const result = await faceApi.post('', stream);
+          return result.data;
         } catch (error) {
           reporter.panic(error);
         }
@@ -129,14 +129,14 @@ async function getFaces(imagePipeline, {id, parentJob}) {
     }
   } while (faces.length < 1 && ++i < 4);
 
-  let msg = 'found none';
+  let message = 'found none';
   if (faces.length > 0) {
-    msg = `found ${faces.length}, with ${
+    message = `found ${faces.length}, with ${
       rotate > 0 ? rotate + 'deg' : 'no'
     } rotation`;
   }
 
-  job.note(msg, 'gray');
+  job.note(message, 'gray');
 
   faces = faces.map(
     ({faceId, faceRectangle: r, faceAttributes: attributes}) => {
@@ -169,7 +169,7 @@ async function getFaces(imagePipeline, {id, parentJob}) {
 }
 
 function createFaceID({imageId, center: {x, y}}) {
-  const [cx, cy] = [x, y].map(n =>
+  const [cx, cy] = [x, y].map((n) =>
     round(n * 100)
       .toString()
       .padStart(2, '0')

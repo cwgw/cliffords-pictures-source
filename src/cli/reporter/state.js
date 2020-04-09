@@ -1,4 +1,4 @@
-const uuid = require('uuid/v4');
+const {v4: uuid} = require('uuid');
 const _ = require('lodash');
 const convertHrtime = require('convert-hrtime');
 const {createStore, bindActionCreators, applyMiddleware} = require('redux');
@@ -38,7 +38,7 @@ const reducer = (state, action) => {
         ...state,
         logs: {
           ...state.logs,
-          active: state.logs.active.filter(o => o.id !== id)
+          active: state.logs.active.filter((o) => o.id !== id)
         }
       };
     }
@@ -49,7 +49,7 @@ const reducer = (state, action) => {
         ...state,
         logs: {
           ...state.logs,
-          active: state.logs.active.map(o =>
+          active: state.logs.active.map((o) =>
             o.id === id ? _.merge({}, o, payload) : o
           )
         }
@@ -106,7 +106,7 @@ function dispatch(action) {
   }
 
   if (Array.isArray(action)) {
-    action.forEach(item => dispatch(item));
+    action.forEach((item) => dispatch(item));
     return;
   }
 
@@ -114,7 +114,7 @@ function dispatch(action) {
 }
 
 const actions = {
-  addActiveLog: id => {
+  addActiveLog: (id) => {
     const job = getJob(id);
     return {
       type: ADD_ACTIVE_LOG,
@@ -139,7 +139,7 @@ const actions = {
       });
     };
   },
-  removeActiveLog: id => {
+  removeActiveLog: (id) => {
     if (!getActiveLog(id)) {
       return null;
     }
@@ -167,7 +167,7 @@ const actions = {
       }
     };
   },
-  createMessage: payload => {
+  createMessage: (payload) => {
     return actions.addStaticLog({
       type: 'message',
       ...payload
@@ -221,7 +221,7 @@ const actions = {
     if (!job) {
       return actions.createMessage({
         status: 'warning',
-        text: `Attempting to update a job that doesn't exist`
+        text: `Attempting to update a job that doesn’t exist`
       });
     }
 
@@ -238,8 +238,8 @@ const actions = {
 
     return actionsToEmit;
   },
-  beginJob: id => actions.addActiveLog(id),
-  completeJob: id => {
+  beginJob: (id) => actions.addActiveLog(id),
+  completeJob: (id) => {
     const job = getJob(id);
 
     if (!job) {
@@ -271,11 +271,11 @@ function getJob(id, getState = store.getState) {
 }
 
 function getActiveLog(id, getState = store.getState) {
-  return id && _.find(getState().logs.active, o => o.id === id);
+  return id && _.find(getState().logs.active, (o) => o.id === id);
 }
 
 function getStaticLog(id, getState = store.getState) {
-  return id && _.find(getState().logs.static, o => o.id === id);
+  return id && _.find(getState().logs.static, (o) => o.id === id);
 }
 
 function denormalizeJob(job, getState = store.getState) {
@@ -293,8 +293,8 @@ function denormalizeJob(job, getState = store.getState) {
   for (const key of keys) {
     clone[key] = [];
     if (!_.isNil(job[key]) && !_.isEmpty(job[key])) {
-      clone[key] = job[key].reduce((arr, o) => {
-        return [...arr, denormalizeJob(o)];
+      clone[key] = job[key].reduce((array, o) => {
+        return [...array, denormalizeJob(o)];
       }, []);
     }
   }

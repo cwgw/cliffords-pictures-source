@@ -19,7 +19,8 @@ module.exports = async (
   const rotate = get(meta, 'transform.rotate', 0);
   const imagePipeline = sharp(file).rotate(rotate);
   const imageVariants = imageSizes.reduce(
-    (arr, width) => arr.concat(imageFormats.map(format => ({format, width}))),
+    (array, width) =>
+      array.concat(imageFormats.map((format) => ({format, width}))),
     []
   );
 
@@ -50,7 +51,7 @@ module.exports = async (
       await fs.writeFile(outputPath, image);
     } catch (error) {
       reporter.panic(
-        `Couldn't create ${path.relative('./', outputPath)}`,
+        `Couldn’t create ${path.relative('./', outputPath)}`,
         error
       );
     }

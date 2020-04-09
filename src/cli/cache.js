@@ -4,7 +4,7 @@ const low = require('lowdb');
 const FileSync = require('lowdb/adapters/FileSync');
 const Memory = require('lowdb/adapters/Memory');
 
-module.exports = config => {
+module.exports = (config) => {
   const {cacheDir, noCache} = config;
   fs.ensureDirSync(cacheDir);
   const dbPath = path.join(cacheDir, 'db.json');
