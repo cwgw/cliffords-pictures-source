@@ -42,7 +42,7 @@
 		"redux": "^4.0.5",
 		"redux-thunk": "^2.3.0",
 		"sharp": "^0.25.2",
-		"uuid": "^7.0.3",
+		"uuid": "^8.0.0",
 		"yargs": "^15.3.1"
 	},
 	"devDependencies": {
@@ -56,11 +56,9 @@
 		"eslint-config-xo-react": "^0.23.0",
 		"eslint-plugin-react": "^7.19.0",
 		"eslint-plugin-react-hooks": "^3.0.0",
-		"husky": "^4.2.5",
-		"lint-staged": "^10.2.1",
 		"prettier": "^2.0.4",
 		"regenerator-runtime": "^0.13.5",
-		"xo": "^0.29.0"
+		"xo": "^0.30.0"
 	},
 	"repository": {
 		"type": "git",
@@ -98,6 +96,16 @@
 			}
 		],
 		"space": true
+	},
+	"husky": {
+		"hooks": {
+			"pre-commit": "lint-staged"
+		}
+	},
+	"lint-staged": {
+		"*.js": [
+			"xo --fix"
+		]
 	},
 	"config": {
 		"cacheDir": ".cache",
