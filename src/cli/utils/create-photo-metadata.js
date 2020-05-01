@@ -164,7 +164,7 @@ async function getFaces(imagePipeline, {id, parentJob}) {
   return {
     faces,
     transform: faces.length > 0 && rotate % 360 ? {rotate} : null,
-    aspectRatio: rotate % 180 === 90 ? 1 / aspectRatio : aspectRatio
+    aspectRatio
   };
 }
 
