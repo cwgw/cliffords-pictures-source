@@ -15,7 +15,7 @@
 		"lint": "xo"
 	},
 	"dependencies": {
-		"axios": "^0.19.2",
+		"axios": "^0.21.1",
 		"bottleneck": "^2.19.5",
 		"chokidar": "^3.3.1",
 		"convert-hrtime": "^3.0.0",
